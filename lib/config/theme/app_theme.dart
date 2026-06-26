@@ -55,6 +55,7 @@ class AppTheme {
       errorColor: AppColors.error,
       hintColor: AppColors.textMuted,
       textColor: AppColors.textPrimary,
+      
     ),
 
     elevatedButtonTheme: _elevatedButtonTheme(

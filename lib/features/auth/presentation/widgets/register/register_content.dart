@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/config/theme/app_colors.dart';
 import 'package:menuloq/core/global/brand_word_mark.dart';
 import 'package:menuloq/features/auth/presentation/bloc/register/register_bloc.dart';
@@ -10,7 +9,7 @@ import 'package:menuloq/features/auth/presentation/bloc/register/register_state.
 import '../divider_text.dart';
 import '../input_label.dart';
 import '../loading_button_content.dart';
-import 'business_url_field.dart';
+import 'business_domain_field.dart';
 import 'mobile_number_field.dart';
 import 'register_step_indicator.dart';
 
@@ -28,7 +27,7 @@ class _RegisterContentState extends State<RegisterContent> {
   final _securityFormKey = GlobalKey<FormState>();
 
   final _businessNameController = TextEditingController();
-  final _businessSlugController = TextEditingController();
+  final _businessDomainController = TextEditingController();
   final _ownerNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
@@ -38,11 +37,22 @@ class _RegisterContentState extends State<RegisterContent> {
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String _countryCode = '+880';
+
+  String _buildFullMobileNumber() {
+    final mobile = _mobileController.text.trim();
+
+    if (mobile.startsWith('0')) {
+      return '$_countryCode${mobile.substring(1)}';
+    }
+
+    return '$_countryCode$mobile';
+  }
 
   @override
   void dispose() {
     _businessNameController.dispose();
-    _businessSlugController.dispose();
+    _businessDomainController.dispose();
     _ownerNameController.dispose();
     _emailController.dispose();
     _mobileController.dispose();
@@ -54,15 +64,15 @@ class _RegisterContentState extends State<RegisterContent> {
   void _continueToSecurity() {
     FocusScope.of(context).unfocus();
 
-    // if (!(_businessFormKey.currentState?.validate() ?? false)) return;
+    if (!(_businessFormKey.currentState?.validate() ?? false)) return;
 
     context.read<RegisterBloc>().add(
       RegisterBusinessStepSubmitted(
         businessName: _businessNameController.text.trim(),
-        businessSlug: _businessSlugController.text.trim().toLowerCase(),
+        subdomain: _businessDomainController.text.trim().toLowerCase(),
         ownerName: _ownerNameController.text.trim(),
         email: _emailController.text.trim(),
-        mobileNumber: _mobileController.text.trim(),
+        mobileNumber: _buildFullMobileNumber(),
       ),
     );
   }
@@ -70,12 +80,19 @@ class _RegisterContentState extends State<RegisterContent> {
   void _createAccount() {
     FocusScope.of(context).unfocus();
 
-    // if (!(_securityFormKey.currentState?.validate() ?? false)) return;
+    if (!(_securityFormKey.currentState?.validate() ?? false)) return;
 
-    // context.read<RegisterBloc>().add(
-    //   RegisterSubmitted(password: _passwordController.text),
-    // );
-    Navigator.pushNamed(context, Routes.veriflyEmail, arguments:  _emailController.text.trim());
+    context.read<RegisterBloc>().add(
+      RegisterSubmitted(
+        businessName: _businessNameController.text.trim(),
+        userName: _businessDomainController.text.trim().toLowerCase(),
+        ownerName: _ownerNameController.text.trim(),
+        email: _emailController.text.trim(),
+        mobileNumber: _buildFullMobileNumber(),
+        password: _passwordController.text,
+        passwordConfirmation: _confirmPasswordController.text,
+      ),
+    );
   }
 
   @override
@@ -92,10 +109,7 @@ class _RegisterContentState extends State<RegisterContent> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (widget.showWordmark) ...[
-              const BrandWordmark(),
-              const SizedBox(height: 34),
-            ],
+            if (widget.showWordmark) ...[const BrandWordmark()],
             const _RegisterHeader(),
             const SizedBox(height: 34),
             RegisterStepIndicator(currentStep: state.step),
@@ -108,10 +122,13 @@ class _RegisterContentState extends State<RegisterContent> {
                       formKey: _businessFormKey,
                       isLoading: isLoading,
                       businessNameController: _businessNameController,
-                      businessSlugController: _businessSlugController,
+                      businessDomainController: _businessDomainController,
                       ownerNameController: _ownerNameController,
                       emailController: _emailController,
                       mobileController: _mobileController,
+                      onCountryCodeChanged: (countryCode) {
+                        _countryCode = countryCode;
+                      },
                       onContinue: _continueToSecurity,
                     )
                   : _SecurityStepForm(
@@ -158,29 +175,29 @@ class _RegisterContentState extends State<RegisterContent> {
   }
 
   String? _passwordValidator(String? value) {
-    final password = value ?? '';
+    // final password = value ?? '';
 
-    if (password.isEmpty) {
-      return 'Please enter your password.';
-    }
+    // if (password.isEmpty) {
+    //   return 'Please enter your password.';
+    // }
 
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters.';
-    }
+    // if (password.length < 6) {
+    //   return 'Password must be at least 8 characters.';
+    // }
 
-    if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
-      return 'Password must include at least one letter.';
-    }
+    // if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
+    //   return 'Password must include at least one letter.';
+    // }
 
-    if (!RegExp(r'[0-9]').hasMatch(password)) {
-      return 'Password must include at least one number.';
-    }
+    // if (!RegExp(r'[0-9]').hasMatch(password)) {
+    //   return 'Password must include at least one number.';
+    // }
 
-    if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
-      return 'Password must include at least one symbol.';
-    }
+    // if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
+    //   return 'Password must include at least one symbol.';
+    // }
 
-    return null;
+    // return null;
   }
 
   String? _confirmPasswordValidator(String? value) {
@@ -204,21 +221,23 @@ class _BusinessStepForm extends StatelessWidget {
     required this.formKey,
     required this.isLoading,
     required this.businessNameController,
-    required this.businessSlugController,
+    required this.businessDomainController,
     required this.ownerNameController,
     required this.emailController,
     required this.mobileController,
+    required this.onCountryCodeChanged,
     required this.onContinue,
   });
 
   final GlobalKey<FormState> formKey;
   final bool isLoading;
   final TextEditingController businessNameController;
-  final TextEditingController businessSlugController;
+  final TextEditingController businessDomainController;
   final TextEditingController ownerNameController;
   final TextEditingController emailController;
   final TextEditingController mobileController;
   final VoidCallback onContinue;
+  final ValueChanged<String> onCountryCodeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -240,12 +259,12 @@ class _BusinessStepForm extends StatelessWidget {
             validator: _requiredValidator('Please enter your business name.'),
           ),
           const SizedBox(height: 18),
-          const InputLabel(text: 'Business URL'),
+          const InputLabel(text: 'Subdomain', isRequired: true),
           const SizedBox(height: 8),
-          BusinessUrlField(
-            controller: businessSlugController,
+          BusinessDomainField(
+            controller: businessDomainController,
             enabled: !isLoading,
-            validator: _businessSlugValidator,
+            validator: _businessDomainValidator,
           ),
           const SizedBox(height: 18),
           const InputLabel(text: 'Owner name'),
@@ -261,7 +280,7 @@ class _BusinessStepForm extends StatelessWidget {
             validator: _requiredValidator('Please enter owner name.'),
           ),
           const SizedBox(height: 18),
-          const InputLabel(text: 'Email address'),
+          const InputLabel(text: 'Business Email'),
           const SizedBox(height: 8),
           TextFormField(
             controller: emailController,
@@ -282,9 +301,7 @@ class _BusinessStepForm extends StatelessWidget {
             enabled: !isLoading,
             validator: _mobileValidator,
             onCountryChanged: (country) {
-              // Save this in local state or Bloc if needed.
-              // country.phoneCode = 880
-              // country.countryCode = BD
+              onCountryCodeChanged('+${country.phoneCode}');
             },
           ),
           const SizedBox(height: 28),
@@ -326,7 +343,7 @@ class _BusinessStepForm extends StatelessWidget {
     };
   }
 
-  static String? _businessSlugValidator(String? value) {
+  static String? _businessDomainValidator(String? value) {
     final slug = (value ?? '').trim().toLowerCase();
 
     if (slug.isEmpty) {
@@ -474,31 +491,43 @@ class _SecurityStepForm extends StatelessWidget {
   }
 }
 
-
-
 class _RegisterHeader extends StatelessWidget {
   const _RegisterHeader();
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final titleColor = isDark
+        ? AppColors.white.withAlpha(235)
+        : AppColors.textPrimary;
+
+    final subtitleColor = isDark
+        ? AppColors.white.withAlpha(170)
+        : AppColors.textSecondary;
+
     return Column(
       children: [
+        SizedBox(height: 20,),
         Text(
-          'Create your account',
+          'Create Business account',
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            color: AppColors.primary,
+          style: theme.textTheme.displaySmall?.copyWith(
+            color: titleColor,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.7,
+            fontSize: 24
           ),
         ),
         const SizedBox(height: 8),
         Text(
           'Start managing your business in minutes.',
           textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: subtitleColor,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -519,7 +548,7 @@ class _SignInFooter extends StatelessWidget {
         Text(
           'Already have an account?',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppColors.textPrimary,
+            color: AppColors.white,
             fontWeight: FontWeight.w600,
           ),
         ),

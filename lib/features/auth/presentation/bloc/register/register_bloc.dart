@@ -1,16 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/features/auth/domain/usecases/register_use_case.dart';
 
 import 'register_event.dart';
 import 'register_state.dart';
 
 class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
-  RegisterBloc() : super(const RegisterState()) {
+  RegisterBloc({required RegisterUseCase registerUseCase})
+    : _registerUseCase = registerUseCase,
+      super(const RegisterState()) {
     on<RegisterBusinessStepSubmitted>(_onBusinessStepSubmitted);
     on<RegisterBackToBusinessRequested>(_onBackToBusinessRequested);
     on<RegisterSubmitted>(_onRegisterSubmitted);
   }
 
-  // final RegisterUseCase registerUseCase;
+  final RegisterUseCase _registerUseCase;
 
   Future<void> _onBusinessStepSubmitted(
     RegisterBusinessStepSubmitted event,
@@ -22,7 +26,7 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
         status: RegisterStatus.initial,
         clearMessage: true,
         businessName: event.businessName,
-        businessSlug: event.businessSlug,
+        subdomain: event.subdomain,
         ownerName: event.ownerName,
         email: event.email,
         mobileNumber: event.mobileNumber,
@@ -47,37 +51,36 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
     RegisterSubmitted event,
     Emitter<RegisterState> emit,
   ) async {
+    debugPrint('BLOC: RegisterSubmitted received');
+
     emit(state.copyWith(status: RegisterStatus.loading, clearMessage: true));
 
     try {
-      // final result = await registerUseCase(
-      //   businessName: state.businessName,
-      //   businessSlug: state.businessSlug,
-      //   ownerName: state.ownerName,
-      //   email: state.email,
-      //   mobileNumber: state.mobileNumber,
-      //   password: event.password,
-      // );
+      debugPrint('BLOC: Calling RegisterUseCase');
+      await _registerUseCase(
+        businessName: event.businessName,
+        userName: event.userName,
+        ownerName: event.ownerName,
+        email: event.email,
+        mobileNumber: event.mobileNumber,
+        password: event.password,
+        passwordConfirmation: event.passwordConfirmation,
+      );
 
-      await Future.delayed(const Duration(seconds: 1));
+      debugPrint('BLOC: Register success');
 
-      if (state.email == 'exist@menuloq.com') {
-        emit(
-          state.copyWith(
-            status: RegisterStatus.failure,
-            message: 'This email address is already registered.',
-          ),
-        );
-        return;
-      }
-
-      emit(state.copyWith(status: RegisterStatus.success));
-    } catch (_) {
       emit(
         state.copyWith(
-          status: RegisterStatus.failure,
-          message: 'Something went wrong. Please try again.',
+          status: RegisterStatus.success,
+          email: event.email,
+          clearMessage: true,
         ),
+      );
+    } catch (e) {
+      debugPrint('BLOC: Register failed: $e');
+
+      emit(
+        state.copyWith(status: RegisterStatus.failure, message: e.toString()),
       );
     }
   }

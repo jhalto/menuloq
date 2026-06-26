@@ -15,26 +15,42 @@ class RegisterStepIndicator extends StatelessWidget {
     final isBusiness = currentStep == RegisterStep.business;
     final isSecurity = currentStep == RegisterStep.security;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _StepItem(
-          number: '1',
-          title: 'Business',
-          isActive: isBusiness,
-        ),
-        Container(
-          width: 78,
-          height: 1.4,
-          margin: const EdgeInsets.symmetric(horizontal: 14),
-          color: AppColors.border,
-        ),
-        _StepItem(
-          number: '2',
-          title: 'Security',
-          isActive: isSecurity,
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 360;
+
+        return Row(
+          children: [
+            Flexible(
+              child: _StepItem(
+                number: '1',
+                title: 'Business',
+                isActive: isBusiness,
+                isCompact: isCompact,
+              ),
+            ),
+
+            Expanded(
+              child: Container(
+                height: 1.4,
+                margin: EdgeInsets.symmetric(
+                  horizontal: isCompact ? 8 : 14,
+                ),
+                color: AppColors.border,
+              ),
+            ),
+
+            Flexible(
+              child: _StepItem(
+                number: '2',
+                title: 'Security',
+                isActive: isSecurity,
+                isCompact: isCompact,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -44,23 +60,28 @@ class _StepItem extends StatelessWidget {
     required this.number,
     required this.title,
     required this.isActive,
+    required this.isCompact,
   });
 
   final String number;
   final String title;
   final bool isActive;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     final activeColor = AppColors.accent;
     final inactiveColor = AppColors.textMuted;
 
+    final circleSize = isCompact ? 38.0 : 44.0;
+
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 220),
-          width: 44,
-          height: 44,
+          width: circleSize,
+          height: circleSize,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isActive ? activeColor : Colors.transparent,
@@ -75,16 +96,23 @@ class _StepItem extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: isActive ? AppColors.white : inactiveColor,
                   fontWeight: FontWeight.w900,
+                  fontSize: isCompact ? 14 : null,
                 ),
           ),
         ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: isActive ? activeColor : inactiveColor,
-                fontWeight: FontWeight.w900,
-              ),
+        SizedBox(width: isCompact ? 7 : 10),
+        Flexible(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: isActive ? activeColor : inactiveColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: isCompact ? 13 : null,
+                ),
+          ),
         ),
       ],
     );

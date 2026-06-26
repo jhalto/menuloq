@@ -16,7 +16,7 @@ class RegisterState {
     this.status = RegisterStatus.initial,
     this.message,
     this.businessName = '',
-    this.businessSlug = '',
+    this.subdomain = '',
     this.ownerName = '',
     this.email = '',
     this.mobileNumber = '',
@@ -27,7 +27,7 @@ class RegisterState {
   final String? message;
 
   final String businessName;
-  final String businessSlug;
+  final String subdomain;
   final String ownerName;
   final String email;
   final String mobileNumber;
@@ -38,7 +38,7 @@ class RegisterState {
     String? message,
     bool clearMessage = false,
     String? businessName,
-    String? businessSlug,
+    String? subdomain,
     String? ownerName,
     String? email,
     String? mobileNumber,
@@ -48,7 +48,7 @@ class RegisterState {
       status: status ?? this.status,
       message: clearMessage ? null : message ?? this.message,
       businessName: businessName ?? this.businessName,
-      businessSlug: businessSlug ?? this.businessSlug,
+      subdomain: subdomain ?? this.subdomain,
       ownerName: ownerName ?? this.ownerName,
       email: email ?? this.email,
       mobileNumber: mobileNumber ?? this.mobileNumber,

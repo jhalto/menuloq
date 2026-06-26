@@ -55,43 +55,61 @@ class _MobileRegisterLayout extends StatelessWidget {
 class _TabletRegisterLayout extends StatelessWidget {
   const _TabletRegisterLayout();
 
+  static const double _outerPadding = 24;
+
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Expanded(child: _RegisterBrandPanel()),
+        const Expanded(
+          flex: 4,
+          child: _RegisterBrandPanel(),
+        ),
+
         Expanded(
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 40),
-            child: Center(
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 500),
-                padding: const EdgeInsets.all(34),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: Theme.of(context).dividerColor.withAlpha(120),
-                  ),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.lightShadow,
-                      blurRadius: 28,
-                      offset: Offset(0, 16),
+          flex: 8,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final cardMinHeight = constraints.maxHeight - (_outerPadding * 2);
+
+              return SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(_outerPadding),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 620,
+                      minHeight: cardMinHeight,
                     ),
-                  ],
+                    child: Container(
+                      padding: const EdgeInsets.all(34),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor.withAlpha(120),
+                        ),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: AppColors.lightShadow,
+                            blurRadius: 28,
+                            offset: Offset(0, 16),
+                          ),
+                        ],
+                      ),
+                      child: const RegisterContent(showWordmark: false),
+                    ),
+                  ),
                 ),
-                child: const RegisterContent(showWordmark: false),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ],
     );
   }
 }
-
 class _RegisterBrandPanel extends StatelessWidget {
   const _RegisterBrandPanel();
 
@@ -99,42 +117,80 @@ class _RegisterBrandPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(24),
-      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(32),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Align(
-            alignment: Alignment.center,
-            child: BrandLogo(color: AppColors.white),
-          ),
-          const Spacer(),
-          Text(
-            'Start your business\nwith MenuLoq.',
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w900,
-                  height: 1.15,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isShortHeight = constraints.maxHeight < 640;
+
+          return SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.all(isShortHeight ? 28 : 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Align(
+                  alignment: Alignment.center,
+                  child: BrandLogo(color: AppColors.white),
                 ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Create your business profile, choose your MenuLoq URL, and secure your account in minutes.',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.white.withAlpha(210),
-                  height: 1.5,
+
+                SizedBox(height: isShortHeight ? 30 : 50),
+
+                Text(
+                  'Start your business\nwith MenuLoq.',
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                        color: AppColors.white,
+                        fontWeight: FontWeight.w900,
+                        height: 1.15,
+                        fontSize: isShortHeight ? 32 : null,
+                      ),
                 ),
-          ),
-          const SizedBox(height: 32),
-          const _PanelPoint(text: 'Business profile setup'),
-          const SizedBox(height: 12),
-          const _PanelPoint(text: 'Custom MenuLoq subdomain'),
-          const SizedBox(height: 12),
-          const _PanelPoint(text: 'Secure password protection'),
-        ],
+
+                const SizedBox(height: 16),
+
+                Text(
+                  'Create your business profile, choose your MenuLoq URL, and secure your account in minutes.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.white.withAlpha(210),
+                        height: 1.5,
+                      ),
+                ),
+
+                SizedBox(height: isShortHeight ? 24 : 32),
+
+                const _PanelPoint(text: 'Business profile setup'),
+                const SizedBox(height: 12),
+                const _PanelPoint(text: 'Custom MenuLoq subdomain'),
+                const SizedBox(height: 12),
+                const _PanelPoint(text: 'Secure password protection'),
+
+                SizedBox(height: isShortHeight ? 24 : 40),
+
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: AppColors.white.withAlpha(24),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppColors.white.withAlpha(35),
+                    ),
+                  ),
+                  child: Text(
+                    'Simple setup. Clean dashboard. Better restaurant management.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.white.withAlpha(220),
+                          fontWeight: FontWeight.w700,
+                          height: 1.45,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -155,12 +211,14 @@ class _PanelPoint extends StatelessWidget {
           size: 22,
         ),
         const SizedBox(width: 10),
-        Text(
-          text,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.white,
-                fontWeight: FontWeight.w700,
-              ),
+        Flexible(
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
         ),
       ],
     );
