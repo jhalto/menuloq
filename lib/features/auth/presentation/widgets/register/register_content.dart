@@ -140,6 +140,11 @@ class _RegisterContentState extends State<RegisterContent> {
                       confirmPasswordController: _confirmPasswordController,
                       obscurePassword: _obscurePassword,
                       obscureConfirmPassword: _obscureConfirmPassword,
+                      onBack: () {
+                        context.read<RegisterBloc>().add(
+                          const RegisterBackToBusinessRequested(),
+                        );
+                      },
                       onPasswordVisibilityTap: () {
                         setState(() {
                           _obscurePassword = !_obscurePassword;
@@ -159,14 +164,17 @@ class _RegisterContentState extends State<RegisterContent> {
               const SizedBox(height: 14),
               _ErrorBox(message: state.message!),
             ],
-            const SizedBox(height: 26),
+            const SizedBox(height: 20),
             const DividerText(text: ''),
-            const SizedBox(height: 18),
             _SignInFooter(
               onTap: isLoading
                   ? null
                   : () {
-                      Navigator.pushNamedAndRemoveUntil(context, Routes.login,(route) => false,);
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        Routes.login,
+                        (route) => false,
+                      );
                     },
             ),
           ],
@@ -176,15 +184,15 @@ class _RegisterContentState extends State<RegisterContent> {
   }
 
   String? _passwordValidator(String? value) {
-    // final password = value ?? '';
+    final password = value ?? '';
 
-    // if (password.isEmpty) {
-    //   return 'Please enter your password.';
-    // }
+    if (password.isEmpty) {
+      return 'Please enter your password.';
+    }
 
-    // if (password.length < 6) {
-    //   return 'Password must be at least 8 characters.';
-    // }
+    if (password.length < 6) {
+      return 'Password must be at least 8 characters.';
+    }
 
     // if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
     //   return 'Password must include at least one letter.';
@@ -398,6 +406,7 @@ class _SecurityStepForm extends StatelessWidget {
     required this.confirmPasswordController,
     required this.obscurePassword,
     required this.obscureConfirmPassword,
+    required this.onBack,
     required this.onPasswordVisibilityTap,
     required this.onConfirmVisibilityTap,
     required this.onSubmit,
@@ -411,6 +420,7 @@ class _SecurityStepForm extends StatelessWidget {
   final TextEditingController confirmPasswordController;
   final bool obscurePassword;
   final bool obscureConfirmPassword;
+  final VoidCallback onBack;
   final VoidCallback onPasswordVisibilityTap;
   final VoidCallback onConfirmVisibilityTap;
   final VoidCallback onSubmit;
@@ -477,14 +487,32 @@ class _SecurityStepForm extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 34),
-          SizedBox(
-            height: 56,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : onSubmit,
-              child: isLoading
-                  ? const LoadingButtonContent()
-                  : const Text('Create account'),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: OutlinedButton.icon(
+                    onPressed: isLoading ? null : onBack,
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    label: const Text('Back'),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : onSubmit,
+                    child: isLoading
+                        ? const LoadingButtonContent()
+                        : const Text('Create account'),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:menuloq/core/error/app_exception.dart';
@@ -16,13 +18,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> register(RegisterRequestModel request) async {
     try {
-      debugPrint('REMOTE: register API calling');
+      debugPrint('REMOTE: register API calling body ${request.userName}');
+      debugPrint('REMOTE: register API calling body ${request.businessName}');
+      debugPrint('REMOTE: register API calling body ${request.email}');
+      debugPrint('REMOTE: register API calling body ${request.ownerName}');
+      debugPrint('REMOTE: register API calling body ${request.password}');
+      debugPrint('REMOTE: register API calling body ${request.mobileNumber}');
+      debugPrint('REMOTE: register API calling body ${request.passwordConfirmation}');
       
       final response = await DioClient.dio.post(
         ApiEndpoints.register,
         data: request.toJson(),
       );
-
+        
       if (kDebugMode) {
         debugPrint('Register success: ${response.data}');
       }
