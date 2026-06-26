@@ -17,7 +17,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> register(RegisterRequestModel request) async {
     try {
       debugPrint('REMOTE: register API calling');
-
+      
       final response = await DioClient.dio.post(
         ApiEndpoints.register,
         data: request.toJson(),
@@ -55,13 +55,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final errors = data['errors'];
 
       if (errors is Map && errors.isNotEmpty) {
-        final firstError = errors.values.first;
+        final messages = <String>[];
 
-        if (firstError is List && firstError.isNotEmpty) {
-          return firstError.first.toString();
+        for (final value in errors.values) {
+          if (value is List) {
+            for (final item in value) {
+              messages.add(item.toString());
+            }
+          } else {
+            messages.add(value.toString());
+          }
         }
 
-        return firstError.toString();
+        if (messages.isNotEmpty) {
+          return messages.join('\n');
+        }
       }
 
       return data['message']?.toString() ?? 'Validation failed.';
@@ -71,25 +79,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       return data['message'].toString();
     }
 
-    if (statusCode == 400) {
-      return 'Invalid request.';
-    }
-
-    if (statusCode == 401) {
-      return 'Unauthorized request.';
-    }
-
-    if (statusCode == 403) {
-      return 'You do not have permission.';
-    }
-
-    if (statusCode == 404) {
-      return 'API endpoint not found.';
-    }
-
-    if (statusCode == 500) {
-      return 'Server error. Please try again later.';
-    }
+    if (statusCode == 400) return 'Invalid request.';
+    if (statusCode == 401) return 'Unauthorized request.';
+    if (statusCode == 403) return 'You do not have permission.';
+    if (statusCode == 404) return 'API endpoint not found.';
+    if (statusCode == 500) return 'Server error. Please try again later.';
 
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout ||

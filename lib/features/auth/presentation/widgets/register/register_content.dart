@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/config/theme/app_colors.dart';
 import 'package:menuloq/core/global/brand_word_mark.dart';
 import 'package:menuloq/features/auth/presentation/bloc/register/register_bloc.dart';
@@ -165,7 +166,7 @@ class _RegisterContentState extends State<RegisterContent> {
               onTap: isLoading
                   ? null
                   : () {
-                      // Navigator.pushReplacementNamed(context, Routes.login);
+                      Navigator.pushNamedAndRemoveUntil(context, Routes.login,(route) => false,);
                     },
             ),
           ],
@@ -509,7 +510,7 @@ class _RegisterHeader extends StatelessWidget {
 
     return Column(
       children: [
-        SizedBox(height: 20,),
+        SizedBox(height: 20),
         Text(
           'Create Business account',
           textAlign: TextAlign.center,
@@ -517,7 +518,7 @@ class _RegisterHeader extends StatelessWidget {
             color: titleColor,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.7,
-            fontSize: 24
+            fontSize: 24,
           ),
         ),
         const SizedBox(height: 8),
@@ -541,18 +542,29 @@ class _SignInFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
           'Already have an account?',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppColors.white,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
           ),
         ),
-        TextButton(onPressed: onTap, child: const Text('Sign in')),
+        TextButton(
+          onPressed: onTap,
+          style: TextButton.styleFrom(
+            foregroundColor: theme.colorScheme.primary,
+            textStyle: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          child: const Text('Sign in'),
+        ),
       ],
     );
   }
