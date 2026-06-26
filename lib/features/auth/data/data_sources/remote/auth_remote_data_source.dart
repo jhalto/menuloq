@@ -10,6 +10,7 @@ import '../../models/register_request_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<void> register(RegisterRequestModel request);
+  Future<void> getOtp(String email);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -24,13 +25,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       debugPrint('REMOTE: register API calling body ${request.ownerName}');
       debugPrint('REMOTE: register API calling body ${request.password}');
       debugPrint('REMOTE: register API calling body ${request.mobileNumber}');
-      debugPrint('REMOTE: register API calling body ${request.passwordConfirmation}');
-      
+      debugPrint(
+        'REMOTE: register API calling body ${request.passwordConfirmation}',
+      );
+
       final response = await DioClient.dio.post(
         ApiEndpoints.register,
         data: request.toJson(),
       );
-        
+
       if (kDebugMode) {
         debugPrint('Register success: ${response.data}');
       }
@@ -49,6 +52,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Unexpected register error: $e');
+      }
+
+      throw const AppException('Something went wrong. Please try again.');
+    }
+  }
+
+  @override
+  Future<void> getOtp(String email) async {
+    try {
+      if (kDebugMode) {
+        debugPrint('REMOTE: get OTP API calling');
+        debugPrint('Email: $email');
+      }
+
+      final response = await DioClient.dio.post(
+        ApiEndpoints.forgotPassword,
+        data: {'email': email.trim()},
+      );
+
+      if (kDebugMode) {
+        debugPrint('Get OTP success: ${response.data}');
+      }
+    } on DioException catch (e) {
+      final message = _handleDioError(e);
+
+      if (kDebugMode) {
+        debugPrint('Get OTP failed');
+        debugPrint('URL: ${e.requestOptions.uri}');
+        debugPrint('Status Code: ${e.response?.statusCode}');
+        debugPrint('Response Data: ${e.response?.data}');
+        debugPrint('Error Message: $message');
+      }
+
+      throw AppException(message);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Unexpected get OTP error: $e');
       }
 
       throw const AppException('Something went wrong. Please try again.');

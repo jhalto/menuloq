@@ -101,7 +101,7 @@ class _RegisterContentState extends State<RegisterContent> {
     return BlocConsumer<RegisterBloc, RegisterState>(
       listener: (context, state) {
         if (state.status == RegisterStatus.success) {
-          // Navigator.pushReplacementNamed(context, Routes.dashboard);
+          Navigator.pushReplacementNamed(context, Routes.veriflyEmail);
         }
       },
       builder: (context, state) {

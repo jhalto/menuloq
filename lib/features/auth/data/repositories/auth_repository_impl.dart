@@ -30,4 +30,9 @@ class AuthRepositoryImpl implements AuthRepository {
 
     await _remoteDataSource.register(request);
   }
+
+  @override
+  Future<void> getOtp({required String email}) async {
+    await _remoteDataSource.getOtp(email);
+  }
 }

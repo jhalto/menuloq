@@ -1,20 +1,25 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/register_use_case.dart';
 
 import 'register_event.dart';
 import 'register_state.dart';
 
 class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
-  RegisterBloc({required RegisterUseCase registerUseCase})
-    : _registerUseCase = registerUseCase,
-      super(const RegisterState()) {
+  RegisterBloc({
+    required RegisterUseCase registerUseCase,
+    required GetOtpUseCase getOtpUseCase,
+  }) : _registerUseCase = registerUseCase,
+       _getOtpUseCase = getOtpUseCase,
+       super(const RegisterState()) {
     on<RegisterBusinessStepSubmitted>(_onBusinessStepSubmitted);
     on<RegisterBackToBusinessRequested>(_onBackToBusinessRequested);
     on<RegisterSubmitted>(_onRegisterSubmitted);
   }
 
   final RegisterUseCase _registerUseCase;
+  final GetOtpUseCase _getOtpUseCase;
 
   Future<void> _onBusinessStepSubmitted(
     RegisterBusinessStepSubmitted event,

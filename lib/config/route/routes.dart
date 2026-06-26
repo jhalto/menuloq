@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_source.dart';
 import 'package:menuloq/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/register_use_case.dart';
 import 'package:menuloq/features/auth/presentation/bloc/forgot_password/forgot_password_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/login/auth_bloc.dart';
@@ -31,13 +32,15 @@ class AppRoutes {
         );
 
       case Routes.register:
+        final remoteDataSource = AuthRemoteDataSourceImpl();
+        final repository = AuthRepositoryImpl(remoteDataSource);
+
         return MaterialPageRoute(
           settings: settings,
           builder: (_) => BlocProvider(
             create: (_) => RegisterBloc(
-              registerUseCase: RegisterUseCase(
-                AuthRepositoryImpl(AuthRemoteDataSourceImpl()),
-              ),
+              registerUseCase: RegisterUseCase(repository),
+              getOtpUseCase: GetOtpUseCase(repository),
             ),
             child: const RegisterView(),
           ),
@@ -78,7 +81,7 @@ class AppRoutes {
             child: const ResetPasswordView(),
           ),
         );
-    
+
       default:
         return MaterialPageRoute(
           builder: (_) =>
