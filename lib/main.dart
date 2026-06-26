@@ -5,6 +5,7 @@ import 'package:menuloq/config/route/routes.dart';
 import 'package:menuloq/config/theme/app_theme.dart';
 
 void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env.dev");
   runApp(const MyApp());
 }
@@ -19,7 +20,7 @@ class MyApp extends StatelessWidget {
       title: 'MenuLoq',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      initialRoute: Routes.login,
+      initialRoute: Routes.initial,
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }

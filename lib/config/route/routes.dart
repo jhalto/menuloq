@@ -20,6 +20,7 @@ class AppRoutes {
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case Routes.initial:
       case Routes.login:
         return MaterialPageRoute(
           settings: settings,
@@ -77,118 +78,7 @@ class AppRoutes {
             child: const ResetPasswordView(),
           ),
         );
-      // case Routes.attendance:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<AttendanceBloc>(
-      //       create: (_) => AttendanceBloc(
-      //         repository: AttendanceRepositoryImpl(
-      //           localDataSource: AttendanceLocalDataSource(),
-      //         ),
-      //       )..add(const AttendanceStarted()),
-      //       child: const AttendanceDashboardPage(),
-      //     ),
-      //   );
-      // case Routes.individualAttendanceReport:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<IndividualAttendanceReportBloc>(
-      //       create: (_) => IndividualAttendanceReportBloc(
-      //         repository: IndividualAttendanceReportRepositoryImpl(
-      //           localDataSource: IndividualAttendanceReportLocalDatasource(),
-      //         ),
-      //       )..add(const IndividualAttendanceReportStarted()),
-      //       child: const IndividualAttendanceReportPage(),
-      //     ),
-      //   );
-      // case Routes.detailedAttendanceReport:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<DetailedAttendanceReportBloc>(
-      //       create: (_) => DetailedAttendanceReportBloc(
-      //         repository: DetailedAttendanceReportRepositoryImpl(
-      //           localDataSource: DetailedAttendanceLocalDataSource(),
-      //         ),
-      //       )..add(const DetailedAttendanceReportStarted()),
-      //       child: const DetailedAttendanceReportPage(),
-      //     ),
-      //   );
-      // case Routes.departmentReport:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<DepartmentAttendanceReportBloc>(
-      //       create: (_) => DepartmentAttendanceReportBloc(
-      //         repository: DepartmentAttendanceReportRepositoryImpl(
-      //           localDataSource: DepartmentReportLocalDataSource(),
-      //         ),
-      //       )..add(const DepartmentReportStarted()),
-      //       child: const DepartmentAttendanceReportPage(),
-      //     ),
-      //   );
-      // case Routes.monthlyReport:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<MonthlyAttendanceReportBloc>(
-      //       create: (_) => MonthlyAttendanceReportBloc(
-      //         repository: MonthlyAttendanceReportRepositoryImpl(
-      //           localDataSource: MonthlyAttendanceReportLocalDataSource(),
-      //         ),
-      //       )..add(const MonthlyAttendanceReportStarted()),
-      //       child: const MonthlyAttendanceReportPage(),
-      //     ),
-      //   );
-
-      // case Routes.detailedMonthlyAttendanceReport:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<DetailedMonthlyAttendanceReportBloc>(
-      //       create: (_) => DetailedMonthlyAttendanceReportBloc(
-      //         repository: DetailedMonthlyAttendanceReportRepositoryImpl(
-      //           localDataSource:
-      //               DetailedMonthlyAttendanceReportLocalDataSource(),
-      //         ),
-      //       )..add(const DetailedMonthlyAttendanceReportStarted()),
-      //       child: const DetailedMonthlyAttendanceReportPage(),
-      //     ),
-      //   );
-      // case Routes.dailyAttendanceReport:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<DailyAttendanceReportBloc>(
-      //       create: (_) => DailyAttendanceReportBloc(
-      //         repository: DailyAttendanceReportRepositoryImpl(
-      //           localDataSource: DailyAttendanceReportLocalDataSource(),
-      //         ),
-      //       )..add(const DailyAttendanceReportStarted()),
-      //       child: const DailyAttendanceReportPage(),
-      //     ),
-      //   );
-
-      // case Routes.dailyAbsentReport:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<DailyAbsentReportBloc>(
-      //       create: (_) => DailyAbsentReportBloc(
-      //         repository: AbsentReportRepositoryImpl(
-      //           localDataSource: AbsentReportLocalDataSource(),
-      //         ),
-      //       )..add(const DailyAbsentReportStarted()),
-      //       child: const DailyAbsentReportPage(),
-      //     ),
-      //   );
-
-      // case Routes.absentSummaryReport:
-      //   return MaterialPageRoute(
-      //     settings: settings,
-      //     builder: (_) => BlocProvider<AbsentSummaryReportBloc>(
-      //       create: (_) => AbsentSummaryReportBloc(
-      //         repository: AbsentReportRepositoryImpl(
-      //           localDataSource: AbsentReportLocalDataSource(),
-      //         ),
-      //       )..add(const AbsentSummaryReportStarted()),
-      //       child: const AbsentSummaryReportPage(),
-      //     ),
-      //   );
+    
       default:
         return MaterialPageRoute(
           builder: (_) =>
