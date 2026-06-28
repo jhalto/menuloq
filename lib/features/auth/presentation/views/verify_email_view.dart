@@ -126,10 +126,9 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
   void _submit() {
     FocusScope.of(context).unfocus();
 
-    // context.read<VerifyEmailBloc>().add(
-    //   VerifyEmailOtpSubmitted(code: _otpCode),
-    // );
-    Navigator.pushNamed(context, Routes.resetPassword);
+    context.read<VerifyEmailBloc>().add(
+      VerifyEmailOtpSubmitted(code: _otpCode),
+    );
   }
 
   @override
@@ -137,8 +136,11 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
     return BlocConsumer<VerifyEmailBloc, VerifyEmailState>(
       listener: (context, state) {
         if (state.status == VerifyEmailStatus.success) {
-          // You may auto redirect after short delay if needed.
-          // Navigator.pushReplacementNamed(context, Routes.login);
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            Routes.login,
+            (route) => false,
+          );
         }
       },
       builder: (context, state) {
@@ -275,11 +277,16 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
             const SizedBox(height: 28),
             const Divider(),
             const SizedBox(height: 14),
+
             TextButton.icon(
               onPressed: isLoading
                   ? null
                   : () {
-                      // Navigator.pushReplacementNamed(context, Routes.login);
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        Routes.login,
+                        (route) => false,
+                      );
                     },
               icon: const Icon(Icons.arrow_back_rounded),
               label: const Text('Back to sign in'),

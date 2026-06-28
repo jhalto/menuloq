@@ -10,6 +10,10 @@ class VerifyEmailStarted extends VerifyEmailEvent {
   final String email;
 }
 
+class VerifyEmailTimerTicked extends VerifyEmailEvent {
+  const VerifyEmailTimerTicked();
+}
+
 class VerifyEmailOtpSubmitted extends VerifyEmailEvent {
   const VerifyEmailOtpSubmitted({
     required this.code,
@@ -20,8 +24,4 @@ class VerifyEmailOtpSubmitted extends VerifyEmailEvent {
 
 class VerifyEmailResendRequested extends VerifyEmailEvent {
   const VerifyEmailResendRequested();
-}
-
-class VerifyEmailTimerTicked extends VerifyEmailEvent {
-  const VerifyEmailTimerTicked();
 }

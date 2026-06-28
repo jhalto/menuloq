@@ -46,9 +46,7 @@ class AppRoutes {
           return _buildRoute(
             settings: settings,
             child: const Scaffold(
-              body: Center(
-                child: Text('Email is required for verification.'),
-              ),
+              body: Center(child: Text('Email is required for verification.')),
             ),
           );
         }
@@ -82,11 +80,7 @@ class AppRoutes {
       default:
         return _buildRoute(
           settings: settings,
-          child: const Scaffold(
-            body: Center(
-              child: Text('Page not found'),
-            ),
-          ),
+          child: const Scaffold(body: Center(child: Text('Page not found'))),
         );
     }
   }
@@ -95,9 +89,6 @@ class AppRoutes {
     required RouteSettings settings,
     required Widget child,
   }) {
-    return MaterialPageRoute(
-      settings: settings,
-      builder: (_) => child,
-    );
+    return MaterialPageRoute(settings: settings, builder: (_) => child);
   }
 }

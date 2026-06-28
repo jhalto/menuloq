@@ -1,15 +1,16 @@
 import 'package:dio/dio.dart';
-
 import 'package:flutter/foundation.dart';
 import 'package:menuloq/core/error/app_exception.dart';
 import 'package:menuloq/core/network/api_endpoints.dart';
 import 'package:menuloq/core/network/dio_client.dart';
 
 import '../../models/register_request_model.dart';
+import '../../models/verify_otp_request_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<void> register(RegisterRequestModel request);
   Future<void> getOtp(String email);
+  Future<void> verifyOtp(VerifyOtpRequestModel request);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -18,16 +19,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> register(RegisterRequestModel request) async {
     try {
-      debugPrint('REMOTE: register API calling body ${request.userName}');
-      debugPrint('REMOTE: register API calling body ${request.businessName}');
-      debugPrint('REMOTE: register API calling body ${request.email}');
-      debugPrint('REMOTE: register API calling body ${request.ownerName}');
-      debugPrint('REMOTE: register API calling body ${request.password}');
-      debugPrint('REMOTE: register API calling body ${request.mobileNumber}');
-      debugPrint(
-        'REMOTE: register API calling body ${request.passwordConfirmation}',
-      );
-
       final response = await DioClient.dio.post(
         ApiEndpoints.register,
         data: request.toJson(),
@@ -37,22 +28,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Register success: ${response.data}');
       }
     } on DioException catch (e) {
-      final message = _handleDioError(e);
-
-      if (kDebugMode) {
-        debugPrint('Register failed');
-        debugPrint('URL: ${e.requestOptions.uri}');
-        debugPrint('Status Code: ${e.response?.statusCode}');
-        debugPrint('Response Data: ${e.response?.data}');
-        debugPrint('Error Message: $message');
-      }
-
-      throw AppException(message);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Unexpected register error: $e');
-      }
-
+      throw AppException(_handleDioError(e));
+    } catch (_) {
       throw const AppException('Something went wrong. Please try again.');
     }
   }
@@ -60,13 +37,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> getOtp(String email) async {
     try {
-      if (kDebugMode) {
-        debugPrint('REMOTE: get OTP API calling');
-        debugPrint('Email: $email');
-      }
-
       final response = await DioClient.dio.post(
-        ApiEndpoints.forgotPassword,
+        ApiEndpoints.getOtp,
         data: {'email': email.trim()},
       );
 
@@ -74,10 +46,34 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Get OTP success: ${response.data}');
       }
     } on DioException catch (e) {
+      throw AppException(_handleDioError(e));
+    } catch (_) {
+      throw const AppException('Something went wrong. Please try again.');
+    }
+  }
+
+  @override
+  Future<void> verifyOtp(VerifyOtpRequestModel request) async {
+    try {
+      if (kDebugMode) {
+        debugPrint('REMOTE: verify OTP API calling');
+        debugPrint('Email: ${request.email}');
+        debugPrint('OTP: ${request.otp}');
+      }
+
+      final response = await DioClient.dio.post(
+        ApiEndpoints.verifyOtp,
+        data: request.toJson(),
+      );
+
+      if (kDebugMode) {
+        debugPrint('Verify OTP success: ${response.data}');
+      }
+    } on DioException catch (e) {
       final message = _handleDioError(e);
 
       if (kDebugMode) {
-        debugPrint('Get OTP failed');
+        debugPrint('Verify OTP failed');
         debugPrint('URL: ${e.requestOptions.uri}');
         debugPrint('Status Code: ${e.response?.statusCode}');
         debugPrint('Response Data: ${e.response?.data}');
@@ -87,7 +83,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       throw AppException(message);
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Unexpected get OTP error: $e');
+        debugPrint('Unexpected verify OTP error: $e');
       }
 
       throw const AppException('Something went wrong. Please try again.');

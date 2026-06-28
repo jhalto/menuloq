@@ -1,22 +1,29 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
+import 'package:menuloq/features/auth/domain/usecases/verify_otp_use_case.dart';
 
 import 'verify_email_event.dart';
 import 'verify_email_state.dart';
 
 class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
-  VerifyEmailBloc() : super(const VerifyEmailState()) {
+  VerifyEmailBloc({
+    required VerifyOtpUseCase verifyOtpUseCase,
+    required GetOtpUseCase getOtpUseCase,
+  })  : _verifyOtpUseCase = verifyOtpUseCase,
+        _getOtpUseCase = getOtpUseCase,
+        super(const VerifyEmailState()) {
     on<VerifyEmailStarted>(_onStarted);
     on<VerifyEmailTimerTicked>(_onTimerTicked);
     on<VerifyEmailOtpSubmitted>(_onOtpSubmitted);
     on<VerifyEmailResendRequested>(_onResendRequested);
   }
 
-  Timer? _timer;
+  final VerifyOtpUseCase _verifyOtpUseCase;
+  final GetOtpUseCase _getOtpUseCase;
 
-  // final VerifyEmailUseCase verifyEmailUseCase;
-  // final ResendOtpUseCase resendOtpUseCase;
+  Timer? _timer;
 
   void _startTimer() {
     _timer?.cancel();
@@ -109,37 +116,24 @@ class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
     );
 
     try {
-      // final result = await verifyEmailUseCase(
-      //   email: state.email,
-      //   code: code,
-      // );
+      await _verifyOtpUseCase(
+        email: state.email,
+        otp: code,
+      );
 
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Demo OTP. Replace with API response.
-      if (code == '3810') {
-        _timer?.cancel();
-
-        emit(
-          state.copyWith(
-            status: VerifyEmailStatus.success,
-            message: 'Email verified successfully.',
-          ),
-        );
-        return;
-      }
+      _timer?.cancel();
 
       emit(
         state.copyWith(
-          status: VerifyEmailStatus.failure,
-          message: 'The OTP code is invalid.',
+          status: VerifyEmailStatus.success,
+          message: 'Email verified successfully.',
         ),
       );
-    } catch (_) {
+    } catch (e) {
       emit(
         state.copyWith(
           status: VerifyEmailStatus.failure,
-          message: 'Something went wrong. Please try again.',
+          message: e.toString(),
         ),
       );
     }
@@ -159,9 +153,7 @@ class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
     );
 
     try {
-      // await resendOtpUseCase(email: state.email);
-
-      await Future.delayed(const Duration(seconds: 1));
+      await _getOtpUseCase(email: state.email);
 
       emit(
         state.copyWith(
@@ -173,11 +165,11 @@ class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
       );
 
       _startTimer();
-    } catch (_) {
+    } catch (e) {
       emit(
         state.copyWith(
           status: VerifyEmailStatus.failure,
-          message: 'Could not resend OTP. Please try again.',
+          message: e.toString(),
         ),
       );
     }

@@ -2,6 +2,7 @@ import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_
 import 'package:menuloq/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/register_use_case.dart';
+import 'package:menuloq/features/auth/domain/usecases/verify_otp_use_case.dart';
 import 'package:menuloq/features/auth/presentation/bloc/forgot_password/forgot_password_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/login/auth_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/register/register_bloc.dart';
@@ -35,18 +36,20 @@ class DependencyFactory {
   // Repositories
   // ──────────────────────────────────────────
 
-  late final AuthRepositoryImpl authRepository =
-      AuthRepositoryImpl(authRemoteDataSource);
+  late final AuthRepositoryImpl authRepository = AuthRepositoryImpl(
+    authRemoteDataSource,
+  );
 
   // ──────────────────────────────────────────
   // Use Cases
   // ──────────────────────────────────────────
 
-  late final GetOtpUseCase getOtpUseCase =
-      GetOtpUseCase(authRepository);
+  late final GetOtpUseCase getOtpUseCase = GetOtpUseCase(authRepository);
 
-  late final RegisterUseCase registerUseCase =
-      RegisterUseCase(authRepository);
+  late final RegisterUseCase registerUseCase = RegisterUseCase(authRepository);
+  late final VerifyOtpUseCase verifyOtpUseCase = VerifyOtpUseCase(
+    authRepository,
+  );
 
   // ──────────────────────────────────────────
   // Blocs
@@ -65,7 +68,10 @@ class DependencyFactory {
   }
 
   VerifyEmailBloc createVerifyEmailBloc() {
-    return VerifyEmailBloc();
+    return VerifyEmailBloc(
+      getOtpUseCase: getOtpUseCase,
+      verifyOtpUseCase: verifyOtpUseCase,
+    );
   }
 
   RegisterBloc createRegisterBloc() {

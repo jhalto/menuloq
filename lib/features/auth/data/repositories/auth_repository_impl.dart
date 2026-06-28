@@ -2,6 +2,7 @@ import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_
 
 import '../../domain/repositories/auth_repository.dart';
 import '../models/register_request_model.dart';
+import '../models/verify_otp_request_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._remoteDataSource);
@@ -32,7 +33,22 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> getOtp({required String email}) async {
-    await _remoteDataSource.getOtp(email);
+  Future<void> getOtp({
+    required String email,
+  }) async {
+    await _remoteDataSource.getOtp(email.trim());
+  }
+
+  @override
+  Future<void> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final request = VerifyOtpRequestModel(
+      email: email,
+      otp: otp,
+    );
+
+    await _remoteDataSource.verifyOtp(request);
   }
 }
