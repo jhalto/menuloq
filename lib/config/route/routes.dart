@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
-import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_source.dart';
-import 'package:menuloq/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
-import 'package:menuloq/features/auth/domain/usecases/register_use_case.dart';
+import 'package:menuloq/core/di/dependency_factory.dart';
 import 'package:menuloq/features/auth/presentation/bloc/forgot_password/forgot_password_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/login/auth_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/register/register_bloc.dart';
@@ -19,74 +16,88 @@ import 'package:menuloq/features/auth/presentation/views/verify_email_view.dart'
 class AppRoutes {
   const AppRoutes._();
 
+  static final DependencyFactory _di = DependencyFactory.instance;
+
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case Routes.initial:
       case Routes.login:
-        return MaterialPageRoute(
+        return _buildRoute(
           settings: settings,
-          builder: (_) => BlocProvider<AuthBloc>(
-            create: (_) => AuthBloc(),
+          child: BlocProvider<AuthBloc>(
+            create: (_) => _di.createAuthBloc(),
             child: const LoginView(),
           ),
         );
 
       case Routes.register:
-        final remoteDataSource = AuthRemoteDataSourceImpl();
-        final repository = AuthRepositoryImpl(remoteDataSource);
-
-        return MaterialPageRoute(
+        return _buildRoute(
           settings: settings,
-          builder: (_) => BlocProvider(
-            create: (_) => RegisterBloc(
-              registerUseCase: RegisterUseCase(repository),
-              getOtpUseCase: GetOtpUseCase(repository),
-            ),
+          child: BlocProvider<RegisterBloc>(
+            create: (_) => _di.createRegisterBloc(),
             child: const RegisterView(),
           ),
         );
-      case Routes.veriflyEmail:
+
+      case Routes.verifyEmail:
         final email = settings.arguments as String?;
 
         if (email == null || email.trim().isEmpty) {
-          return MaterialPageRoute(
+          return _buildRoute(
             settings: settings,
-            builder: (_) => const Scaffold(
-              body: Center(child: Text('Email is required for verification.')),
+            child: const Scaffold(
+              body: Center(
+                child: Text('Email is required for verification.'),
+              ),
             ),
           );
         }
 
-        return MaterialPageRoute(
+        return _buildRoute(
           settings: settings,
-          builder: (_) => BlocProvider<VerifyEmailBloc>(
-            create: (_) => VerifyEmailBloc(),
+          child: BlocProvider<VerifyEmailBloc>(
+            create: (_) => _di.createVerifyEmailBloc(),
             child: VerifyEmailView(email: email),
           ),
         );
 
       case Routes.forgotPassword:
-        return MaterialPageRoute(
+        return _buildRoute(
           settings: settings,
-          builder: (_) => BlocProvider<ForgotPasswordBloc>(
-            create: (_) => ForgotPasswordBloc(),
+          child: BlocProvider<ForgotPasswordBloc>(
+            create: (_) => _di.createForgotPasswordBloc(),
             child: const ForgotPasswordView(),
           ),
         );
+
       case Routes.resetPassword:
-        return MaterialPageRoute(
+        return _buildRoute(
           settings: settings,
-          builder: (_) => BlocProvider<ResetPasswordBloc>(
-            create: (_) => ResetPasswordBloc(),
+          child: BlocProvider<ResetPasswordBloc>(
+            create: (_) => _di.createResetPasswordBloc(),
             child: const ResetPasswordView(),
           ),
         );
 
       default:
-        return MaterialPageRoute(
-          builder: (_) =>
-              const Scaffold(body: Center(child: Text("Page not found"))),
+        return _buildRoute(
+          settings: settings,
+          child: const Scaffold(
+            body: Center(
+              child: Text('Page not found'),
+            ),
+          ),
         );
     }
+  }
+
+  static MaterialPageRoute<dynamic> _buildRoute({
+    required RouteSettings settings,
+    required Widget child,
+  }) {
+    return MaterialPageRoute(
+      settings: settings,
+      builder: (_) => child,
+    );
   }
 }

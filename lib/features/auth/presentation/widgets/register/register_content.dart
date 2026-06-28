@@ -103,7 +103,7 @@ class _RegisterContentState extends State<RegisterContent> {
         if (state.status == RegisterStatus.success) {
           Navigator.pushReplacementNamed(
             context,
-            Routes.veriflyEmail,
+            Routes.verifyEmail,
             arguments: state.email,
           );
         }
