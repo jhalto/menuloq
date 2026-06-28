@@ -56,12 +56,10 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
     RegisterSubmitted event,
     Emitter<RegisterState> emit,
   ) async {
-    debugPrint('BLOC: RegisterSubmitted received');
-
     emit(state.copyWith(status: RegisterStatus.loading, clearMessage: true));
 
     try {
-      debugPrint('BLOC: Calling RegisterUseCase');
+      // 1. Register
       await _registerUseCase(
         businessName: event.businessName,
         userName: event.userName,
@@ -72,18 +70,12 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
         passwordConfirmation: event.passwordConfirmation,
       );
 
-      debugPrint('BLOC: Register success');
+      // 2. Send OTP
+      await _getOtpUseCase(email: event.email);
 
-      emit(
-        state.copyWith(
-          status: RegisterStatus.success,
-          email: event.email,
-          clearMessage: true,
-        ),
-      );
+      // 3. Success
+      emit(state.copyWith(status: RegisterStatus.success, email: event.email));
     } catch (e) {
-      debugPrint('BLOC: Register failed: $e');
-
       emit(
         state.copyWith(status: RegisterStatus.failure, message: e.toString()),
       );
