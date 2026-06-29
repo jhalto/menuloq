@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/core/error/app_exception.dart';
 import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/register_use_case.dart';
 
@@ -69,16 +69,30 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
         password: event.password,
         passwordConfirmation: event.passwordConfirmation,
       );
-
-      // 2. Send OTP
-      await _getOtpUseCase(email: event.email);
-
-      // 3. Success
-      emit(state.copyWith(status: RegisterStatus.success, email: event.email));
-    } catch (e) {
+    } on AppException catch (e) {
       emit(
-        state.copyWith(status: RegisterStatus.failure, message: e.toString()),
+        state.copyWith(status: RegisterStatus.failure, message: e.message),
       );
+      return;
+    } catch (_) {
+      emit(
+        state.copyWith(
+          status: RegisterStatus.failure,
+          message: 'Registration failed. Please try again.',
+        ),
+      );
+      return;
     }
+
+    try {
+      // 2. Send OTP (non-blocking — user can resend from verify screen)
+      await _getOtpUseCase(email: event.email);
+    } catch (_) {
+      // OTP send failed, but registration succeeded.
+      // User can request a new OTP from the verify email screen.
+    }
+
+    // 3. Navigate to verify email
+    emit(state.copyWith(status: RegisterStatus.success, email: event.email));
   }
 }

@@ -4,13 +4,18 @@ import 'package:menuloq/core/error/app_exception.dart';
 import 'package:menuloq/core/network/api_endpoints.dart';
 import 'package:menuloq/core/network/dio_client.dart';
 
+import '../../models/change_password_request_model.dart';
+import '../../models/login_request_model.dart';
+import '../../models/login_response_model.dart';
 import '../../models/register_request_model.dart';
 import '../../models/verify_otp_request_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<void> register(RegisterRequestModel request);
+  Future<LoginResponseModel> login(LoginRequestModel request);
   Future<void> getOtp(String email);
   Future<void> verifyOtp(VerifyOtpRequestModel request);
+  Future<void> changePassword(ChangePasswordRequestModel request);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -27,6 +32,35 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (kDebugMode) {
         debugPrint('Register success: ${response.data}');
       }
+    } on DioException catch (e) {
+      throw AppException(_handleDioError(e));
+    } catch (_) {
+      throw const AppException('Something went wrong. Please try again.');
+    }
+  }
+
+  @override
+  Future<LoginResponseModel> login(LoginRequestModel request) async {
+    try {
+      final response = await DioClient.dio.post(
+        ApiEndpoints.login,
+        data: request.toJson(),
+      );
+
+      if (kDebugMode) {
+        debugPrint('Login success: ${response.data}');
+      }
+
+      if (response.data is Map<String, dynamic>) {
+        return LoginResponseModel.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+      }
+
+      return const LoginResponseModel(
+        token: '',
+        message: 'Login successful.',
+      );
     } on DioException catch (e) {
       throw AppException(_handleDioError(e));
     } catch (_) {
@@ -86,6 +120,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Unexpected verify OTP error: $e');
       }
 
+      throw const AppException('Something went wrong. Please try again.');
+    }
+  }
+
+  @override
+  Future<void> changePassword(ChangePasswordRequestModel request) async {
+    try {
+      final response = await DioClient.dio.post(
+        ApiEndpoints.changePassword,
+        data: request.toJson(),
+      );
+
+      if (kDebugMode) {
+        debugPrint('Change password success: ${response.data}');
+      }
+    } on DioException catch (e) {
+      throw AppException(_handleDioError(e));
+    } catch (_) {
       throw const AppException('Something went wrong. Please try again.');
     }
   }

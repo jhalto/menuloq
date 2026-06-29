@@ -1,3 +1,5 @@
+import 'package:menuloq/features/auth/data/models/login_response_model.dart';
+
 abstract class AuthRepository {
   Future<void> register({
     required String businessName,
@@ -9,6 +11,11 @@ abstract class AuthRepository {
     required String passwordConfirmation,
   });
 
+  Future<LoginResponseModel> login({
+    required String email,
+    required String password,
+  });
+
   Future<void> getOtp({
     required String email,
   });
@@ -16,5 +23,11 @@ abstract class AuthRepository {
   Future<void> verifyOtp({
     required String email,
     required String otp,
+  });
+
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String passwordConfirmation,
   });
 }

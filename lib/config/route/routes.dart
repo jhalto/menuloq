@@ -12,6 +12,7 @@ import 'package:menuloq/features/auth/presentation/views/login_view.dart';
 import 'package:menuloq/features/auth/presentation/views/register_view.dart';
 import 'package:menuloq/features/auth/presentation/views/reset_password_view.dart';
 import 'package:menuloq/features/auth/presentation/views/verify_email_view.dart';
+import 'package:menuloq/features/dashboard/presentation/views/dashboard_view.dart';
 
 class AppRoutes {
   const AppRoutes._();
@@ -69,12 +70,31 @@ class AppRoutes {
         );
 
       case Routes.resetPassword:
+        final email = settings.arguments as String?;
+
+        if (email == null || email.trim().isEmpty) {
+          return _buildRoute(
+            settings: settings,
+            child: const Scaffold(
+              body: Center(
+                child: Text('Email is required for password reset.'),
+              ),
+            ),
+          );
+        }
+
         return _buildRoute(
           settings: settings,
           child: BlocProvider<ResetPasswordBloc>(
             create: (_) => _di.createResetPasswordBloc(),
-            child: const ResetPasswordView(),
+            child: ResetPasswordView(initialEmail: email),
           ),
+        );
+
+      case Routes.dashboard:
+        return _buildRoute(
+          settings: settings,
+          child: const DashboardView(),
         );
 
       default:

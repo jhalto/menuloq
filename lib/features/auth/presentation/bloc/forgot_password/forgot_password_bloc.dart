@@ -1,15 +1,18 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/core/error/app_exception.dart';
+import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
 
 import 'forgot_password_event.dart';
 import 'forgot_password_state.dart';
 
 class ForgotPasswordBloc
     extends Bloc<ForgotPasswordEvent, ForgotPasswordState> {
-  ForgotPasswordBloc() : super(const ForgotPasswordState()) {
+  ForgotPasswordBloc({required this.getOtpUseCase})
+      : super(const ForgotPasswordState()) {
     on<ForgotPasswordOtpRequested>(_onOtpRequested);
   }
 
-  // final SendForgotPasswordOtpUseCase sendForgotPasswordOtpUseCase;
+  final GetOtpUseCase getOtpUseCase;
 
   Future<void> _onOtpRequested(
     ForgotPasswordOtpRequested event,
@@ -26,25 +29,19 @@ class ForgotPasswordBloc
     );
 
     try {
-      // await sendForgotPasswordOtpUseCase(email: email);
-
-      await Future.delayed(const Duration(seconds: 1));
-
-      // Demo validation. Remove after API integration.
-      if (email == 'notfound@menuloq.com') {
-        emit(
-          state.copyWith(
-            status: ForgotPasswordStatus.failure,
-            message: 'No account found with this email address.',
-          ),
-        );
-        return;
-      }
+      await getOtpUseCase(email: email);
 
       emit(
         state.copyWith(
           status: ForgotPasswordStatus.success,
           message: 'A 4-digit verification code has been sent.',
+        ),
+      );
+    } on AppException catch (e) {
+      emit(
+        state.copyWith(
+          status: ForgotPasswordStatus.failure,
+          message: e.message,
         ),
       );
     } catch (_) {

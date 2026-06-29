@@ -42,7 +42,7 @@ class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
         email: event.email,
         status: VerifyEmailStatus.initial,
         expiresIn: 600,
-        resendIn: 60,
+        resendIn: 120,
       ),
     );
 
@@ -160,7 +160,7 @@ class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
           status: VerifyEmailStatus.resendSuccess,
           message: 'A new OTP code has been sent.',
           expiresIn: 600,
-          resendIn: 60,
+          resendIn: 120,
         ),
       );
 

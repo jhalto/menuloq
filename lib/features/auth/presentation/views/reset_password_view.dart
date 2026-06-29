@@ -74,7 +74,7 @@ class _MobileResetPasswordLayout extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 430),
-          child: ResetPasswordContent(initialEmail: initialEmail),
+          child: ResetPasswordContent(),
         ),
       ),
     );
@@ -123,7 +123,7 @@ class _TabletResetPasswordLayout extends StatelessWidget {
                   ],
                 ),
                 child: ResetPasswordContent(
-                  initialEmail: initialEmail,
+                 
                   showBackButton: false,
                   showWordmark: false,
                 ),

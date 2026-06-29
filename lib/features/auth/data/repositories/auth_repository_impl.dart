@@ -1,4 +1,7 @@
 import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_source.dart';
+import 'package:menuloq/features/auth/data/models/change_password_request_model.dart';
+import 'package:menuloq/features/auth/data/models/login_request_model.dart';
+import 'package:menuloq/features/auth/data/models/login_response_model.dart';
 
 import '../../domain/repositories/auth_repository.dart';
 import '../models/register_request_model.dart';
@@ -33,6 +36,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<LoginResponseModel> login({
+    required String email,
+    required String password,
+  }) async {
+    final request = LoginRequestModel(
+      email: email,
+      password: password,
+    );
+
+    return _remoteDataSource.login(request);
+  }
+
+  @override
   Future<void> getOtp({
     required String email,
   }) async {
@@ -50,5 +66,20 @@ class AuthRepositoryImpl implements AuthRepository {
     );
 
     await _remoteDataSource.verifyOtp(request);
+  }
+
+  @override
+  Future<void> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String passwordConfirmation,
+  }) async {
+    final request = ChangePasswordRequestModel(
+      
+      password: password,
+      passwordConfirmation: passwordConfirmation,
+    );
+
+    await _remoteDataSource.changePassword(request);
   }
 }

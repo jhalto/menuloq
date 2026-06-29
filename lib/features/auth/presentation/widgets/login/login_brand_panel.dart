@@ -9,7 +9,6 @@ class LoginBrandPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = ThemeData.dark();
     return Container(
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.all(40),

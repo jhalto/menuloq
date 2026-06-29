@@ -1,6 +1,8 @@
 import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_source.dart';
 import 'package:menuloq/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:menuloq/features/auth/domain/usecases/change_password_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
+import 'package:menuloq/features/auth/domain/usecases/login_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/register_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/verify_otp_use_case.dart';
 import 'package:menuloq/features/auth/presentation/bloc/forgot_password/forgot_password_bloc.dart';
@@ -46,25 +48,36 @@ class DependencyFactory {
 
   late final GetOtpUseCase getOtpUseCase = GetOtpUseCase(authRepository);
 
+  late final LoginUseCase loginUseCase = LoginUseCase(authRepository);
   late final RegisterUseCase registerUseCase = RegisterUseCase(authRepository);
   late final VerifyOtpUseCase verifyOtpUseCase = VerifyOtpUseCase(
     authRepository,
   );
+  late final ChangePasswordUseCase changePasswordUseCase =
+      ChangePasswordUseCase(authRepository);
 
   // ──────────────────────────────────────────
   // Blocs
   // ──────────────────────────────────────────
 
   AuthBloc createAuthBloc() {
-    return AuthBloc();
+    return AuthBloc(
+      loginUseCase: loginUseCase,
+      getOtpUseCase: getOtpUseCase,
+    );
   }
 
   ForgotPasswordBloc createForgotPasswordBloc() {
-    return ForgotPasswordBloc();
+    return ForgotPasswordBloc(
+      getOtpUseCase: getOtpUseCase,
+    );
   }
 
   ResetPasswordBloc createResetPasswordBloc() {
-    return ResetPasswordBloc();
+    return ResetPasswordBloc(
+      changePasswordUseCase: changePasswordUseCase,
+      getOtpUseCase: getOtpUseCase,
+    );
   }
 
   VerifyEmailBloc createVerifyEmailBloc() {

@@ -12,7 +12,7 @@ class BrandLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const BrandWordmark(loqColor: AppColors.white,),
+        BrandWordmark(loqColor: color),
         const SizedBox(height: 20),
         Container(
           width: 72,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/config/route/route_name.dart';
 
 import '../../../../../config/theme/app_colors.dart';
 import '../../bloc/forgot_password/forgot_password_bloc.dart';
@@ -53,18 +54,11 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
     return BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
       listener: (context, state) {
         if (state.status == ForgotPasswordStatus.success) {
-          // Navigate to OTP screen.
-          //
-          // Example:
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     builder: (_) => BlocProvider(
-          //       create: (_) => VerifyEmailBloc(),
-          //       child: VerifyEmailView(email: state.email),
-          //     ),
-          //   ),
-          // );
+          Navigator.pushNamed(
+            context,
+            Routes.resetPassword,
+            arguments: state.email,
+          );
         }
       },
       builder: (context, state) {
@@ -238,10 +232,16 @@ class _ForgotPasswordMessage extends StatelessWidget {
           borderColor: AppColors.success,
           iconColor: AppColors.success,
           textColor: AppColors.textPrimary,
-          actionText: 'Verify OTP',
+          actionText: 'Go to Reset Password',
           actionColor: AppColors.accent,
           onActionTap: () {
-            // Navigate to OTP screen.
+            if (state.email.isNotEmpty) {
+              Navigator.pushNamed(
+                context,
+                Routes.resetPassword,
+                arguments: state.email,
+              );
+            }
           },
         );
 

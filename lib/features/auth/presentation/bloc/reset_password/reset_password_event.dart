@@ -12,15 +12,13 @@ class ResetPasswordStarted extends ResetPasswordEvent {
 
 class ResetPasswordSubmitted extends ResetPasswordEvent {
   const ResetPasswordSubmitted({
-    required this.email,
-    required this.code,
-    required this.password,
+    required this.oldPassword,
+    required this.newPassword,
     required this.confirmPassword,
   });
 
-  final String email;
-  final String code;
-  final String password;
+  final String oldPassword;
+  final String newPassword;
   final String confirmPassword;
 }
 

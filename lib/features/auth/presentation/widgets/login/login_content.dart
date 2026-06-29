@@ -55,7 +55,6 @@ class _LoginContentState extends State<LoginContent> {
             password: _passwordController.text,
           ),
         );
-    Navigator.pushNamed(context, Routes.register);
   }
 
   @override
@@ -63,7 +62,16 @@ class _LoginContentState extends State<LoginContent> {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state.status == AuthStatus.success) {
-          // Navigator.pushReplacementNamed(context, Routes.dashboard);
+          Navigator.pushReplacementNamed(context, Routes.dashboard);
+        }
+
+        if (state.status == AuthStatus.emailNotVerified &&
+            state.email != null) {
+          Navigator.pushNamed(
+            context,
+            Routes.verifyEmail,
+            arguments: state.email,
+          );
         }
       },
       builder: (context, state) {

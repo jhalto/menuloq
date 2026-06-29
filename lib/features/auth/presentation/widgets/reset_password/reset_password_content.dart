@@ -8,17 +8,14 @@ import '../../bloc/reset_password/reset_password_state.dart';
 import '../input_label.dart';
 import '../loading_button_content.dart';
 import '../message_box.dart';
-import '../verifly_email/otp_code_field.dart';
 
 class ResetPasswordContent extends StatefulWidget {
   const ResetPasswordContent({
     super.key,
-    this.initialEmail = '',
     this.showBackButton = true,
     this.showWordmark = true,
   });
 
-  final String initialEmail;
   final bool showBackButton;
   final bool showWordmark;
 
@@ -28,27 +25,19 @@ class ResetPasswordContent extends StatefulWidget {
 
 class _ResetPasswordContentState extends State<ResetPasswordContent> {
   final _formKey = GlobalKey<FormState>();
-  final _otpKey = GlobalKey<OtpCodeFieldState>();
 
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _oldPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _obscurePassword = true;
+  bool _obscureOldPassword = true;
+  bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
-
-  String _otpCode = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _emailController.text = widget.initialEmail;
-  }
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _oldPasswordController.dispose();
+    _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
@@ -56,47 +45,14 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
   void _submit() {
     FocusScope.of(context).unfocus();
 
-    final otp = _otpKey.currentState?.code ?? _otpCode;
-
     if (!(_formKey.currentState?.validate() ?? false)) return;
-
-    if (otp.length != 4) {
-      context.read<ResetPasswordBloc>().add(
-            ResetPasswordSubmitted(
-              email: _emailController.text.trim(),
-              code: otp,
-              password: _passwordController.text,
-              confirmPassword: _confirmPasswordController.text,
-            ),
-          );
-      return;
-    }
 
     context.read<ResetPasswordBloc>().add(
           ResetPasswordSubmitted(
-            email: _emailController.text.trim(),
-            code: otp,
-            password: _passwordController.text,
+            oldPassword: _oldPasswordController.text,
+            newPassword: _newPasswordController.text,
             confirmPassword: _confirmPasswordController.text,
           ),
-        );
-  }
-
-  void _requestNewOtp() {
-    FocusScope.of(context).unfocus();
-
-    final email = _emailController.text.trim();
-
-    if (_emailValidator(email) != null) {
-      _formKey.currentState?.validate();
-      return;
-    }
-
-    _otpCode = '';
-    _otpKey.currentState?.clear();
-
-    context.read<ResetPasswordBloc>().add(
-          ResetPasswordOtpRequested(email: email),
         );
   }
 
@@ -105,11 +61,19 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
     return BlocConsumer<ResetPasswordBloc, ResetPasswordState>(
       listener: (context, state) {
         if (state.status == ResetPasswordStatus.success) {
-          // Navigator.pushReplacementNamed(context, Routes.login);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Password changed successfully.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+
+          Navigator.pop(context);
         }
       },
       builder: (context, state) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
         final isLoading = state.status == ResetPasswordStatus.loading;
 
         final titleColor =
@@ -118,12 +82,12 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
         final subtitleColor =
             isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
 
-        final password = _passwordController.text;
+        final newPassword = _newPasswordController.text;
         final confirmPassword = _confirmPasswordController.text;
 
-        final hasMinLength = password.length >= 8;
+        final hasMinLength = newPassword.length >= 8;
         final passwordsMatch =
-            password.isNotEmpty && password == confirmPassword;
+            newPassword.isNotEmpty && newPassword == confirmPassword;
 
         return Form(
           key: _formKey,
@@ -151,76 +115,66 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
               const SizedBox(height: 22),
 
               Text(
-                'Create a new password',
+                'Change password',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      color: titleColor,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.6,
-                    ),
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  color: titleColor,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.6,
+                ),
               ),
 
               const SizedBox(height: 10),
 
               Text(
-                'Enter your verification code and\nchoose a secure new password.',
+                'Update your account password to keep your account secure.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: subtitleColor,
-                      height: 1.45,
-                    ),
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: subtitleColor,
+                  height: 1.45,
+                ),
               ),
 
               const SizedBox(height: 30),
 
-              const InputLabel(text: 'Email address'),
+              const InputLabel(text: 'Old password', isRequired: true),
               const SizedBox(height: 8),
 
               TextFormField(
-                controller: _emailController,
+                controller: _oldPasswordController,
                 enabled: !isLoading,
-                keyboardType: TextInputType.emailAddress,
+                obscureText: _obscureOldPassword,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  hintText: 'Enter your email address',
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-                validator: _emailValidator,
-              ),
-
-              const SizedBox(height: 20),
-
-              const InputLabel(text: 'Verification code'),
-              const SizedBox(height: 10),
-
-              OtpCodeField(
-                key: _otpKey,
-                enabled: !isLoading,
-                onCompleted: (code) {
-                  _otpCode = code;
-                },
-              ),
-
-              const SizedBox(height: 10),
-
-              Text(
-                'Auto-focus, numbers only, and paste entire code supported.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: subtitleColor,
-                      fontWeight: FontWeight.w600,
+                decoration: InputDecoration(
+                  hintText: 'Enter old password',
+                  prefixIcon: const Icon(Icons.lock_outline_rounded),
+                  suffixIcon: IconButton(
+                    onPressed: isLoading
+                        ? null
+                        : () {
+                            setState(() {
+                              _obscureOldPassword = !_obscureOldPassword;
+                            });
+                          },
+                    icon: Icon(
+                      _obscureOldPassword
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
                     ),
+                  ),
+                ),
+                validator: _oldPasswordValidator,
               ),
 
               const SizedBox(height: 18),
 
-              const InputLabel(text: 'New password'),
+              const InputLabel(text: 'New password', isRequired: true),
               const SizedBox(height: 8),
 
               TextFormField(
-                controller: _passwordController,
+                controller: _newPasswordController,
                 enabled: !isLoading,
-                obscureText: _obscurePassword,
+                obscureText: _obscureNewPassword,
                 textInputAction: TextInputAction.next,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
@@ -231,22 +185,22 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
                         ? null
                         : () {
                             setState(() {
-                              _obscurePassword = !_obscurePassword;
+                              _obscureNewPassword = !_obscureNewPassword;
                             });
                           },
                     icon: Icon(
-                      _obscurePassword
+                      _obscureNewPassword
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
                     ),
                   ),
                 ),
-                validator: _passwordValidator,
+                validator: _newPasswordValidator,
               ),
 
               const SizedBox(height: 18),
 
-              const InputLabel(text: 'Confirm password'),
+              const InputLabel(text: 'Confirm password', isRequired: true),
               const SizedBox(height: 8),
 
               TextFormField(
@@ -282,15 +236,11 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
 
               Text(
                 'Use at least 8 characters.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: subtitleColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: subtitleColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-
-              const SizedBox(height: 8),
-
-              _PasswordStrengthBar(score: _passwordScore(password)),
 
               const SizedBox(height: 12),
 
@@ -309,7 +259,7 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
                 ],
               ),
 
-              const SizedBox(height: 22),
+              const SizedBox(height: 24),
 
               SizedBox(
                 height: 56,
@@ -317,7 +267,7 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
                   onPressed: isLoading ? null : _submit,
                   child: isLoading
                       ? const LoadingButtonContent()
-                      : const Text('Reset password'),
+                      : const Text('Change password'),
                 ),
               ),
 
@@ -326,30 +276,10 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
                 const _ResettingBox(),
               ],
 
-              const SizedBox(height: 14),
-
-              TextButton(
-                onPressed: isLoading ? null : _requestNewOtp,
-                child: const Text('Request a new OTP'),
-              ),
-
               if (state.message != null) ...[
                 const SizedBox(height: 18),
                 _ResetPasswordStatusMessage(state: state),
               ],
-
-              const SizedBox(height: 24),
-
-              TextButton.icon(
-                onPressed: isLoading
-                    ? null
-                    : () {
-                        // Navigator.pushReplacementNamed(context, Routes.login);
-                        Navigator.pop(context);
-                      },
-                icon: const Icon(Icons.arrow_back_rounded),
-                label: const Text('Back to sign in'),
-              ),
             ],
           ),
         );
@@ -357,36 +287,17 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
     );
   }
 
-  int _passwordScore(String password) {
-    var score = 0;
+  String? _oldPasswordValidator(String? value) {
+    final password = value ?? '';
 
-    if (password.length >= 8) score++;
-    if (RegExp(r'[A-Z]').hasMatch(password)) score++;
-    if (RegExp(r'[0-9]').hasMatch(password)) score++;
-    if (RegExp(r'[^A-Za-z0-9]').hasMatch(password)) score++;
-
-    return score.clamp(0, 4);
-  }
-
-  String? _emailValidator(String? value) {
-    final email = value?.trim() ?? '';
-
-    if (email.isEmpty) {
-      return 'Please enter your email address.';
-    }
-
-    final isValidEmail = RegExp(
-      r'^[\w\-.]+@([\w-]+\.)+[\w-]{2,4}$',
-    ).hasMatch(email);
-
-    if (!isValidEmail) {
-      return 'Please enter a valid email address.';
+    if (password.isEmpty) {
+      return 'Please enter your old password.';
     }
 
     return null;
   }
 
-  String? _passwordValidator(String? value) {
+  String? _newPasswordValidator(String? value) {
     final password = value ?? '';
 
     if (password.isEmpty) {
@@ -397,6 +308,10 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
       return 'Password must be at least 8 characters.';
     }
 
+    if (password == _oldPasswordController.text) {
+      return 'New password must be different from old password.';
+    }
+
     return null;
   }
 
@@ -404,48 +319,14 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
     final confirmPassword = value ?? '';
 
     if (confirmPassword.isEmpty) {
-      return 'Please confirm your password.';
+      return 'Please confirm your new password.';
     }
 
-    if (confirmPassword != _passwordController.text) {
+    if (confirmPassword != _newPasswordController.text) {
       return 'Password confirmation does not match.';
     }
 
     return null;
-  }
-}
-
-class _PasswordStrengthBar extends StatelessWidget {
-  const _PasswordStrengthBar({
-    required this.score,
-  });
-
-  final int score;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Row(
-      children: List.generate(4, (index) {
-        final isActive = index < score;
-
-        return Expanded(
-          child: Container(
-            height: 5,
-            margin: EdgeInsets.only(right: index == 3 ? 0 : 6),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? AppColors.accent
-                  : isDark
-                      ? AppColors.darkBorder
-                      : AppColors.border,
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-        );
-      }),
-    );
   }
 }
 
@@ -460,17 +341,22 @@ class _RuleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final backgroundColor = isValid
         ? isDark
-            ? const Color(0xFF173D22)
+            ? const Color(0xFF12351F)
             : AppColors.accentLight
         : isDark
             ? AppColors.darkFill
             : AppColors.fill;
 
-    final borderColor = isValid ? AppColors.accent : AppColors.border;
+    final borderColor = isValid
+        ? AppColors.accent
+        : isDark
+            ? AppColors.darkBorder
+            : AppColors.border;
 
     final textColor = isValid
         ? isDark
@@ -480,28 +366,38 @@ class _RuleChip extends StatelessWidget {
             ? AppColors.darkTextMuted
             : AppColors.textSecondary;
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: borderColor.withAlpha(isValid ? 150 : 100)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: borderColor.withAlpha(isValid ? 180 : 120),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isValid ? Icons.check_circle_outline_rounded : Icons.circle_outlined,
-            size: 18,
-            color: textColor,
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            child: Icon(
+              isValid
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+              key: ValueKey<bool>(isValid),
+              size: 18,
+              color: textColor,
+            ),
           ),
           const SizedBox(width: 8),
           Text(
             text,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w800,
-                ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: textColor,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -520,60 +416,27 @@ class _ResetPasswordStatusMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    switch (state.status) {
-      case ResetPasswordStatus.failure:
-        return MessageBox(
-          icon: Icons.error_rounded,
-          text: state.message ?? 'The OTP code is invalid.',
-          backgroundColor:
-              isDark ? const Color(0xFF3A1515) : AppColors.dangerLight,
-          borderColor: AppColors.danger,
-          iconColor: AppColors.danger,
-          textColor: isDark ? AppColors.darkTextPrimary : AppColors.danger,
-        );
-
-      case ResetPasswordStatus.expired:
-        return MessageBox(
-          icon: Icons.timer_rounded,
-          text: state.message ?? 'OTP has expired. Please request a new OTP.',
-          backgroundColor:
-              isDark ? const Color(0xFF3A2A0A) : AppColors.warningLight,
-          borderColor: AppColors.warning,
-          iconColor: AppColors.warning,
-          textColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-        );
-
-      case ResetPasswordStatus.passwordMismatch:
-        return MessageBox(
-          icon: Icons.error_rounded,
-          text: state.message ?? 'Password confirmation does not match.',
-          backgroundColor:
-              isDark ? const Color(0xFF3A1515) : AppColors.dangerLight,
-          borderColor: AppColors.danger,
-          iconColor: AppColors.danger,
-          textColor: isDark ? AppColors.darkTextPrimary : AppColors.danger,
-        );
-
-      case ResetPasswordStatus.success:
-        return MessageBox(
-          icon: Icons.check_circle_rounded,
-          text: state.message ?? 'Password reset successfully.',
-          actionText: 'Continue to sign in',
-          backgroundColor:
-              isDark ? const Color(0xFF12351F) : AppColors.successLight,
-          borderColor: AppColors.success,
-          iconColor: AppColors.success,
-          textColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-          actionColor: AppColors.accent,
-          onActionTap: () {
-            // Navigator.pushReplacementNamed(context, Routes.login);
-          },
-        );
-
-      case ResetPasswordStatus.initial:
-      case ResetPasswordStatus.loading:
-        return const SizedBox.shrink();
+    if (state.status == ResetPasswordStatus.success) {
+      return MessageBox(
+        icon: Icons.check_circle_rounded,
+        text: state.message ?? 'Password changed successfully.',
+        backgroundColor:
+            isDark ? const Color(0xFF12351F) : AppColors.successLight,
+        borderColor: AppColors.success,
+        iconColor: AppColors.success,
+        textColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
+      );
     }
+
+    return MessageBox(
+      icon: Icons.error_rounded,
+      text: state.message ?? 'Could not change password. Please try again.',
+      backgroundColor:
+          isDark ? const Color(0xFF3A1515) : AppColors.dangerLight,
+      borderColor: AppColors.danger,
+      iconColor: AppColors.danger,
+      textColor: isDark ? AppColors.darkTextPrimary : AppColors.danger,
+    );
   }
 }
 
@@ -605,11 +468,11 @@ class _ResettingBox extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            'Resetting password...',
+            'Changing password...',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.accent,
-                  fontWeight: FontWeight.w900,
-                ),
+              color: AppColors.accent,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ],
       ),
@@ -643,7 +506,7 @@ class _ResetPasswordIcon extends StatelessWidget {
           alignment: Alignment.center,
           children: [
             Icon(
-              Icons.lock_outline_rounded,
+              Icons.lock_reset_rounded,
               color: isDark ? AppColors.darkTextPrimary : AppColors.primary,
               size: 44,
             ),
@@ -676,21 +539,28 @@ class _ResetPasswordWordmark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w900,
-          letterSpacing: -0.4,
-        );
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final style = theme.textTheme.headlineMedium?.copyWith(
+      fontWeight: FontWeight.w900,
+      letterSpacing: -0.4,
+    );
 
     return Text.rich(
       TextSpan(
         children: [
           TextSpan(
             text: 'Menu',
-            style: style?.copyWith(color: AppColors.primary),
+            style: style?.copyWith(
+              color: isDark ? AppColors.accent : AppColors.primary,
+            ),
           ),
           TextSpan(
             text: 'Loq',
-            style: style?.copyWith(color: AppColors.accent),
+            style: style?.copyWith(
+              color: isDark ? AppColors.white : AppColors.accent,
+            ),
           ),
         ],
       ),

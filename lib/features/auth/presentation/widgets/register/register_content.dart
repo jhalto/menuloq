@@ -101,11 +101,12 @@ class _RegisterContentState extends State<RegisterContent> {
     return BlocConsumer<RegisterBloc, RegisterState>(
       listener: (context, state) {
         if (state.status == RegisterStatus.success) {
-          Navigator.pushReplacementNamed(
+          Navigator.pushNamedAndRemoveUntil(
             context,
-            Routes.login,
+            Routes.verifyEmail,
+            (route) => false,
+            arguments: state.email,
           );
-          
         }
       },
       builder: (context, state) {
@@ -125,6 +126,7 @@ class _RegisterContentState extends State<RegisterContent> {
                   ? _BusinessStepForm(
                       key: const ValueKey('business-step'),
                       formKey: _businessFormKey,
+                      
                       isLoading: isLoading,
                       businessNameController: _businessNameController,
                       businessDomainController: _businessDomainController,
@@ -194,23 +196,12 @@ class _RegisterContentState extends State<RegisterContent> {
       return 'Please enter your password.';
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       return 'Password must be at least 8 characters.';
     }
 
-    // if (!RegExp(r'[A-Za-z]').hasMatch(password)) {
-    //   return 'Password must include at least one letter.';
-    // }
-
-    // if (!RegExp(r'[0-9]').hasMatch(password)) {
-    //   return 'Password must include at least one number.';
-    // }
-
-    // if (!RegExp(r'[^A-Za-z0-9]').hasMatch(password)) {
-    //   return 'Password must include at least one symbol.';
-    // }
-
-    // return null;
+ 
+    return null;
   }
 
   String? _confirmPasswordValidator(String? value) {
