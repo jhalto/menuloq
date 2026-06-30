@@ -1,0 +1,1 @@
+enum VerifyEmailType { registration, forgotPassword }

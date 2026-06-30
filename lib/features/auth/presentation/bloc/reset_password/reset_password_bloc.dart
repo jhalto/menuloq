@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/core/error/app_exception.dart';
-import 'package:menuloq/features/auth/domain/usecases/change_password_use_case.dart';
+import 'package:menuloq/features/auth/domain/usecases/reset_password_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
 
 import 'reset_password_event.dart';
@@ -8,7 +8,7 @@ import 'reset_password_state.dart';
 
 class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
   ResetPasswordBloc({
-    required this.changePasswordUseCase,
+    required this.resetPasswordUseCase,
     required this.getOtpUseCase,
   }) : super(const ResetPasswordState()) {
     on<ResetPasswordStarted>(_onStarted);
@@ -16,7 +16,7 @@ class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
     on<ResetPasswordOtpRequested>(_onOtpRequested);
   }
 
-  final ChangePasswordUseCase changePasswordUseCase;
+  final ResetPasswordUseCase resetPasswordUseCase;
   final GetOtpUseCase getOtpUseCase;
 
   Future<void> _onStarted(
@@ -37,15 +37,11 @@ class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
     Emitter<ResetPasswordState> emit,
   ) async {
     emit(
-      state.copyWith(
-        status: ResetPasswordStatus.loading,
-        email: event.email.trim(),
-        clearMessage: true,
-      ),
+      state.copyWith(status: ResetPasswordStatus.loading, clearMessage: true),
     );
 
     try {
-      if (event.password != event.confirmPassword) {
+      if (event.newPassword != event.confirmPassword) {
         emit(
           state.copyWith(
             status: ResetPasswordStatus.passwordMismatch,
@@ -55,10 +51,10 @@ class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
         return;
       }
 
-      await changePasswordUseCase(
-        email: event.email.trim(),
-        otp: event.code.trim(),
-        password: event.password,
+      await resetPasswordUseCase(
+        email: event.email,
+        otp: event.otp,
+        newPassword: event.newPassword,
         passwordConfirmation: event.confirmPassword,
       );
 
@@ -82,10 +78,7 @@ class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
       }
 
       emit(
-        state.copyWith(
-          status: ResetPasswordStatus.failure,
-          message: e.message,
-        ),
+        state.copyWith(status: ResetPasswordStatus.failure, message: e.message),
       );
     } catch (_) {
       emit(
@@ -120,10 +113,7 @@ class ResetPasswordBloc extends Bloc<ResetPasswordEvent, ResetPasswordState> {
       );
     } on AppException catch (e) {
       emit(
-        state.copyWith(
-          status: ResetPasswordStatus.failure,
-          message: e.message,
-        ),
+        state.copyWith(status: ResetPasswordStatus.failure, message: e.message),
       );
     } catch (_) {
       emit(

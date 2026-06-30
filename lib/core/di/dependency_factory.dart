@@ -1,6 +1,6 @@
 import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_source.dart';
 import 'package:menuloq/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:menuloq/features/auth/domain/usecases/change_password_use_case.dart';
+import 'package:menuloq/features/auth/domain/usecases/reset_password_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/login_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/register_use_case.dart';
@@ -53,8 +53,8 @@ class DependencyFactory {
   late final VerifyOtpUseCase verifyOtpUseCase = VerifyOtpUseCase(
     authRepository,
   );
-  late final ChangePasswordUseCase changePasswordUseCase =
-      ChangePasswordUseCase(authRepository);
+  late final ResetPasswordUseCase resetPasswordUseCase =
+      ResetPasswordUseCase(authRepository);
 
   // ──────────────────────────────────────────
   // Blocs
@@ -75,7 +75,7 @@ class DependencyFactory {
 
   ResetPasswordBloc createResetPasswordBloc() {
     return ResetPasswordBloc(
-      changePasswordUseCase: changePasswordUseCase,
+      resetPasswordUseCase: resetPasswordUseCase,
       getOtpUseCase: getOtpUseCase,
     );
   }

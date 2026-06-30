@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
+import 'package:menuloq/features/auth/domain/enums/verify_email_type.dart';
 import 'package:menuloq/features/auth/presentation/widgets/verifly_email/otp_code_field.dart';
 
 import '../../../../config/theme/app_colors.dart';
@@ -11,9 +12,14 @@ import '../widgets/loading_button_content.dart';
 import '../widgets/message_box.dart';
 
 class VerifyEmailView extends StatefulWidget {
-  const VerifyEmailView({super.key, required this.email});
+  const VerifyEmailView({
+    super.key,
+    required this.email,
+    this.type = VerifyEmailType.registration,
+  });
 
   final String email;
+  final VerifyEmailType type;
 
   @override
   State<VerifyEmailView> createState() => _VerifyEmailViewState();
@@ -42,10 +48,16 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
             final isTablet = constraints.maxWidth >= _tabletBreakpoint;
 
             if (isTablet) {
-              return const _TabletVerifyEmailLayout();
+              return _TabletVerifyEmailLayout(
+                email: widget.email,
+                type: widget.type,
+              );
             }
 
-            return const _MobileVerifyEmailLayout();
+            return _MobileVerifyEmailLayout(
+              email: widget.email,
+              type: widget.type,
+            );
           },
         ),
       ),
@@ -54,17 +66,20 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
 }
 
 class _MobileVerifyEmailLayout extends StatelessWidget {
-  const _MobileVerifyEmailLayout();
+  const _MobileVerifyEmailLayout({required this.email, required this.type});
+
+  final String email;
+  final VerifyEmailType type;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
       child: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 430),
-          child: VerifyEmailContent(),
+          constraints: const BoxConstraints(maxWidth: 430),
+          child: VerifyEmailContent(email: email, type: type),
         ),
       ),
     );
@@ -72,7 +87,10 @@ class _MobileVerifyEmailLayout extends StatelessWidget {
 }
 
 class _TabletVerifyEmailLayout extends StatelessWidget {
-  const _TabletVerifyEmailLayout();
+  const _TabletVerifyEmailLayout({required this.email, required this.type});
+
+  final String email;
+  final VerifyEmailType type;
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +117,11 @@ class _TabletVerifyEmailLayout extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: const VerifyEmailContent(showBackButton: false),
+                child: VerifyEmailContent(
+                  email: email,
+                  type: type,
+                  showBackButton: false,
+                ),
               ),
             ),
           ),
@@ -110,8 +132,15 @@ class _TabletVerifyEmailLayout extends StatelessWidget {
 }
 
 class VerifyEmailContent extends StatefulWidget {
-  const VerifyEmailContent({super.key, this.showBackButton = true});
+  const VerifyEmailContent({
+    super.key,
+    required this.email,
+    required this.type,
+    this.showBackButton = true,
+  });
 
+  final String email;
+  final VerifyEmailType type;
   final bool showBackButton;
 
   @override
@@ -126,9 +155,19 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
   void _submit() {
     FocusScope.of(context).unfocus();
 
-    context.read<VerifyEmailBloc>().add(
-      VerifyEmailOtpSubmitted(code: _otpCode),
-    );
+    final otp = _otpCode.trim();
+
+    if (otp.length != 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter the 4-digit OTP code.'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+      return;
+    }
+
+    context.read<VerifyEmailBloc>().add(VerifyEmailOtpSubmitted(code: otp));
   }
 
   @override
@@ -136,6 +175,15 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
     return BlocConsumer<VerifyEmailBloc, VerifyEmailState>(
       listener: (context, state) {
         if (state.status == VerifyEmailStatus.success) {
+          if (widget.type == VerifyEmailType.forgotPassword) {
+            Navigator.pushReplacementNamed(
+              context,
+              Routes.resetPassword,
+              arguments: {'email': widget.email, 'otp': _otpCode.trim()},
+            );
+            return;
+          }
+
           Navigator.pushNamedAndRemoveUntil(
             context,
             Routes.login,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
+import 'package:menuloq/features/auth/domain/enums/verify_email_type.dart';
 
 import '../../../../../config/theme/app_colors.dart';
 import '../../bloc/forgot_password/forgot_password_bloc.dart';
@@ -43,10 +44,8 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     context.read<ForgotPasswordBloc>().add(
-          ForgotPasswordOtpRequested(
-            email: _emailController.text.trim(),
-          ),
-        );
+      ForgotPasswordOtpRequested(email: _emailController.text.trim()),
+    );
   }
 
   @override
@@ -54,10 +53,13 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
     return BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
       listener: (context, state) {
         if (state.status == ForgotPasswordStatus.success) {
-          Navigator.pushNamed(
+          Navigator.pushReplacementNamed(
             context,
-            Routes.resetPassword,
-            arguments: state.email,
+            Routes.verifyEmail,
+            arguments: {
+              'email': state.email,
+              'type': VerifyEmailType.forgotPassword,
+            },
           );
         }
       },
@@ -65,11 +67,13 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
         final isLoading = state.status == ForgotPasswordStatus.loading;
 
-        final titleColor =
-            isDark ? AppColors.darkTextPrimary : AppColors.primary;
+        final titleColor = isDark
+            ? AppColors.darkTextPrimary
+            : AppColors.primary;
 
-        final subtitleColor =
-            isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+        final subtitleColor = isDark
+            ? AppColors.darkTextSecondary
+            : AppColors.textSecondary;
 
         return Form(
           key: _formKey,
@@ -92,20 +96,20 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
 
               if (widget.showWordmark) ...[
                 const _ForgotPasswordWordmark(),
-                const SizedBox(height: 54),
+                const SizedBox(height: 34),
               ],
 
               const _ForgotPasswordHeroIcon(),
-              const SizedBox(height: 34),
+              const SizedBox(height: 24),
 
               Text(
                 'Forgot password?',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: titleColor,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.7,
-                    ),
+                  color: titleColor,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.7,
+                ),
               ),
 
               const SizedBox(height: 12),
@@ -114,10 +118,10 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
                 'Enter your registered email address and\nwe’ll send you a 4-digit verification code.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: subtitleColor,
-                      height: 1.5,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  color: subtitleColor,
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
 
               const SizedBox(height: 58),
@@ -164,20 +168,18 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
                 text: 'The code will be valid for 10 minutes.',
               ),
 
-              const SizedBox(height: 22),
+              const SizedBox(height: 5),
 
               const ForgotPasswordInfoRow(
                 icon: Icons.schedule_rounded,
-                text: 'You can request a new OTP after 60 seconds.',
+                text: 'You can request a new OTP after 120 seconds.',
               ),
 
-              const SizedBox(height: 46),
+              const SizedBox(height: 16),
 
-              Divider(
-                color: isDark ? AppColors.darkBorder : AppColors.border,
-              ),
+              Divider(color: isDark ? AppColors.darkBorder : AppColors.border),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               TextButton(
                 onPressed: isLoading
@@ -215,9 +217,7 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
 }
 
 class _ForgotPasswordMessage extends StatelessWidget {
-  const _ForgotPasswordMessage({
-    required this.state,
-  });
+  const _ForgotPasswordMessage({required this.state});
 
   final ForgotPasswordState state;
 
@@ -327,9 +327,9 @@ class _ForgotPasswordWordmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w900,
-          letterSpacing: -0.4,
-        );
+      fontWeight: FontWeight.w900,
+      letterSpacing: -0.4,
+    );
 
     return Text.rich(
       TextSpan(

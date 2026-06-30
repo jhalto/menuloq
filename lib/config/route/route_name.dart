@@ -6,6 +6,6 @@ class Routes {
   static const String verifyEmail = "/verify-email";
   static const String forgotPassword = "/forgot-password";
   static const String resetPassword = "/reset-password";
+  static const String changePassword = "/change-password";
   static const String dashboard = "/dashboard";
-
 }

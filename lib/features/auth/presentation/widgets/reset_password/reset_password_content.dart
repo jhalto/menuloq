@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/config/route/route_name.dart';
 
 import '../../../../../config/theme/app_colors.dart';
 import '../../bloc/reset_password/reset_password_bloc.dart';
@@ -12,10 +13,13 @@ import '../message_box.dart';
 class ResetPasswordContent extends StatefulWidget {
   const ResetPasswordContent({
     super.key,
+    required this.email,
+    required this.otp,
     this.showBackButton = true,
     this.showWordmark = true,
   });
-
+  final String email;
+  final String otp;
   final bool showBackButton;
   final bool showWordmark;
 
@@ -26,17 +30,14 @@ class ResetPasswordContent extends StatefulWidget {
 class _ResetPasswordContentState extends State<ResetPasswordContent> {
   final _formKey = GlobalKey<FormState>();
 
-  final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  bool _obscureOldPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
-    _oldPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -48,12 +49,13 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     context.read<ResetPasswordBloc>().add(
-          ResetPasswordSubmitted(
-            oldPassword: _oldPasswordController.text,
-            newPassword: _newPasswordController.text,
-            confirmPassword: _confirmPasswordController.text,
-          ),
-        );
+      ResetPasswordSubmitted(
+        email: widget.email,
+        otp: widget.otp,
+        newPassword: _newPasswordController.text,
+        confirmPassword: _confirmPasswordController.text,
+      ),
+    );
   }
 
   @override
@@ -68,7 +70,11 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
             ),
           );
 
-          Navigator.pop(context);
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            Routes.login,
+            (route) => false,
+          );
         }
       },
       builder: (context, state) {
@@ -76,11 +82,13 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
         final isDark = theme.brightness == Brightness.dark;
         final isLoading = state.status == ResetPasswordStatus.loading;
 
-        final titleColor =
-            isDark ? AppColors.darkTextPrimary : AppColors.primary;
+        final titleColor = isDark
+            ? AppColors.darkTextPrimary
+            : AppColors.primary;
 
-        final subtitleColor =
-            isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+        final subtitleColor = isDark
+            ? AppColors.darkTextSecondary
+            : AppColors.textSecondary;
 
         final newPassword = _newPasswordController.text;
         final confirmPassword = _confirmPasswordController.text;
@@ -99,10 +107,7 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     onPressed: isLoading ? null : () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.arrow_back_rounded,
-                      color: titleColor,
-                    ),
+                    icon: Icon(Icons.arrow_back_rounded, color: titleColor),
                   ),
                 ),
 
@@ -115,7 +120,7 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
               const SizedBox(height: 22),
 
               Text(
-                'Change password',
+                'Reset password',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineLarge?.copyWith(
                   color: titleColor,
@@ -136,37 +141,6 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
               ),
 
               const SizedBox(height: 30),
-
-              const InputLabel(text: 'Old password', isRequired: true),
-              const SizedBox(height: 8),
-
-              TextFormField(
-                controller: _oldPasswordController,
-                enabled: !isLoading,
-                obscureText: _obscureOldPassword,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  hintText: 'Enter old password',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded),
-                  suffixIcon: IconButton(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            setState(() {
-                              _obscureOldPassword = !_obscureOldPassword;
-                            });
-                          },
-                    icon: Icon(
-                      _obscureOldPassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                    ),
-                  ),
-                ),
-                validator: _oldPasswordValidator,
-              ),
-
-              const SizedBox(height: 18),
 
               const InputLabel(text: 'New password', isRequired: true),
               const SizedBox(height: 8),
@@ -248,14 +222,8 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  _RuleChip(
-                    isValid: hasMinLength,
-                    text: '8+ characters',
-                  ),
-                  _RuleChip(
-                    isValid: passwordsMatch,
-                    text: 'Passwords match',
-                  ),
+                  _RuleChip(isValid: hasMinLength, text: '8+ characters'),
+                  _RuleChip(isValid: passwordsMatch, text: 'Passwords match'),
                 ],
               ),
 
@@ -308,10 +276,6 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
       return 'Password must be at least 8 characters.';
     }
 
-    if (password == _oldPasswordController.text) {
-      return 'New password must be different from old password.';
-    }
-
     return null;
   }
 
@@ -331,10 +295,7 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
 }
 
 class _RuleChip extends StatelessWidget {
-  const _RuleChip({
-    required this.isValid,
-    required this.text,
-  });
+  const _RuleChip({required this.isValid, required this.text});
 
   final bool isValid;
   final String text;
@@ -346,25 +307,25 @@ class _RuleChip extends StatelessWidget {
 
     final backgroundColor = isValid
         ? isDark
-            ? const Color(0xFF12351F)
-            : AppColors.accentLight
+              ? const Color(0xFF12351F)
+              : AppColors.accentLight
         : isDark
-            ? AppColors.darkFill
-            : AppColors.fill;
+        ? AppColors.darkFill
+        : AppColors.fill;
 
     final borderColor = isValid
         ? AppColors.accent
         : isDark
-            ? AppColors.darkBorder
-            : AppColors.border;
+        ? AppColors.darkBorder
+        : AppColors.border;
 
     final textColor = isValid
         ? isDark
-            ? AppColors.darkAccent
-            : AppColors.accent
+              ? AppColors.darkAccent
+              : AppColors.accent
         : isDark
-            ? AppColors.darkTextMuted
-            : AppColors.textSecondary;
+        ? AppColors.darkTextMuted
+        : AppColors.textSecondary;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
@@ -373,9 +334,7 @@ class _RuleChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: borderColor.withAlpha(isValid ? 180 : 120),
-        ),
+        border: Border.all(color: borderColor.withAlpha(isValid ? 180 : 120)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -406,9 +365,7 @@ class _RuleChip extends StatelessWidget {
 }
 
 class _ResetPasswordStatusMessage extends StatelessWidget {
-  const _ResetPasswordStatusMessage({
-    required this.state,
-  });
+  const _ResetPasswordStatusMessage({required this.state});
 
   final ResetPasswordState state;
 
@@ -420,8 +377,9 @@ class _ResetPasswordStatusMessage extends StatelessWidget {
       return MessageBox(
         icon: Icons.check_circle_rounded,
         text: state.message ?? 'Password changed successfully.',
-        backgroundColor:
-            isDark ? const Color(0xFF12351F) : AppColors.successLight,
+        backgroundColor: isDark
+            ? const Color(0xFF12351F)
+            : AppColors.successLight,
         borderColor: AppColors.success,
         iconColor: AppColors.success,
         textColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
@@ -431,8 +389,7 @@ class _ResetPasswordStatusMessage extends StatelessWidget {
     return MessageBox(
       icon: Icons.error_rounded,
       text: state.message ?? 'Could not change password. Please try again.',
-      backgroundColor:
-          isDark ? const Color(0xFF3A1515) : AppColors.dangerLight,
+      backgroundColor: isDark ? const Color(0xFF3A1515) : AppColors.dangerLight,
       borderColor: AppColors.danger,
       iconColor: AppColors.danger,
       textColor: isDark ? AppColors.darkTextPrimary : AppColors.danger,

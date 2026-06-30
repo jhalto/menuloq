@@ -5,8 +5,7 @@ class ApiEndpoints {
   static const String login = '/api/login';
   static const String getOtp = '/api/get-otp';
   static const String verifyOtp = '/api/verify-otp';
-  
   static const String forgotPassword = '/api/forgot-password';
-  static const String resetPassword = '/api/reset-password';
+  static const String resetPassword = '/api/reset-password-by-otp';
   static const String changePassword = '/api/change-password';
 }

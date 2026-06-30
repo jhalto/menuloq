@@ -7,12 +7,10 @@ import '../bloc/reset_password/reset_password_event.dart';
 import '../widgets/reset_password/reset_password_content.dart';
 
 class ResetPasswordView extends StatefulWidget {
-  const ResetPasswordView({
-    super.key,
-    this.initialEmail = '',
-  });
+  const ResetPasswordView({super.key, this.initialEmail = '', this.otp = ''});
 
   final String initialEmail;
+  final String otp;
 
   @override
   State<ResetPasswordView> createState() => _ResetPasswordViewState();
@@ -26,8 +24,8 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
     super.initState();
 
     context.read<ResetPasswordBloc>().add(
-          ResetPasswordStarted(email: widget.initialEmail),
-        );
+      ResetPasswordStarted(email: widget.initialEmail),
+    );
   }
 
   @override
@@ -35,8 +33,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDark ? AppColors.darkBackground : AppColors.background,
+      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
       resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: LayoutBuilder(
@@ -46,11 +43,13 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             if (isTablet) {
               return _TabletResetPasswordLayout(
                 initialEmail: widget.initialEmail,
+                otp: widget.otp,
               );
             }
 
             return _MobileResetPasswordLayout(
               initialEmail: widget.initialEmail,
+              otp: widget.otp,
             );
           },
         ),
@@ -62,9 +61,11 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
 class _MobileResetPasswordLayout extends StatelessWidget {
   const _MobileResetPasswordLayout({
     required this.initialEmail,
+    required this.otp,
   });
 
   final String initialEmail;
+  final String otp;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +75,7 @@ class _MobileResetPasswordLayout extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 430),
-          child: ResetPasswordContent(),
+          child: ResetPasswordContent(email: initialEmail, otp: otp),
         ),
       ),
     );
@@ -82,11 +83,10 @@ class _MobileResetPasswordLayout extends StatelessWidget {
 }
 
 class _TabletResetPasswordLayout extends StatelessWidget {
-  const _TabletResetPasswordLayout({
-    required this.initialEmail,
-  });
+  const _TabletResetPasswordLayout({required this.initialEmail, this.otp = ''});
 
   final String initialEmail;
+  final String otp;
 
   @override
   Widget build(BuildContext context) {
@@ -94,9 +94,7 @@ class _TabletResetPasswordLayout extends StatelessWidget {
 
     return Row(
       children: [
-        const Expanded(
-          child: _ResetPasswordBrandPanel(),
-        ),
+        const Expanded(child: _ResetPasswordBrandPanel()),
         Expanded(
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -109,8 +107,9 @@ class _TabletResetPasswordLayout extends StatelessWidget {
                   color: isDark ? AppColors.darkCard : AppColors.surface,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color:
-                        isDark ? AppColors.darkCardBorder : AppColors.cardBorder,
+                    color: isDark
+                        ? AppColors.darkCardBorder
+                        : AppColors.cardBorder,
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -123,7 +122,8 @@ class _TabletResetPasswordLayout extends StatelessWidget {
                   ],
                 ),
                 child: ResetPasswordContent(
-                 
+                  email: initialEmail,
+                  otp: otp,
                   showBackButton: false,
                   showWordmark: false,
                 ),
@@ -156,18 +156,18 @@ class _ResetPasswordBrandPanel extends StatelessWidget {
           Text(
             'Create a secure\nnew password.',
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w900,
-                  height: 1.15,
-                ),
+              color: AppColors.white,
+              fontWeight: FontWeight.w900,
+              height: 1.15,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
             'Use your verification code and set a strong password to recover your MenuLoq account.',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.white.withAlpha(210),
-                  height: 1.5,
-                ),
+              color: AppColors.white.withAlpha(210),
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 32),
           const _PanelPoint(text: 'OTP verification'),
@@ -187,9 +187,9 @@ class _PanelWordmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = Theme.of(context).textTheme.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w900,
-          letterSpacing: -0.4,
-        );
+      fontWeight: FontWeight.w900,
+      letterSpacing: -0.4,
+    );
 
     return Text.rich(
       TextSpan(
@@ -209,9 +209,7 @@ class _PanelWordmark extends StatelessWidget {
 }
 
 class _PanelPoint extends StatelessWidget {
-  const _PanelPoint({
-    required this.text,
-  });
+  const _PanelPoint({required this.text});
 
   final String text;
 
@@ -229,9 +227,9 @@ class _PanelPoint extends StatelessWidget {
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: AppColors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],

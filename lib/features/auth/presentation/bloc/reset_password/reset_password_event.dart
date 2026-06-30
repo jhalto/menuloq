@@ -3,29 +3,26 @@ abstract class ResetPasswordEvent {
 }
 
 class ResetPasswordStarted extends ResetPasswordEvent {
-  const ResetPasswordStarted({
-    required this.email,
-  });
+  const ResetPasswordStarted({required this.email});
 
   final String email;
 }
 
 class ResetPasswordSubmitted extends ResetPasswordEvent {
   const ResetPasswordSubmitted({
-    required this.oldPassword,
+    required this.email,
+    required this.otp,
     required this.newPassword,
     required this.confirmPassword,
   });
-
-  final String oldPassword;
+  final String email;
+  final String otp;
   final String newPassword;
   final String confirmPassword;
 }
 
 class ResetPasswordOtpRequested extends ResetPasswordEvent {
-  const ResetPasswordOtpRequested({
-    required this.email,
-  });
+  const ResetPasswordOtpRequested({required this.email});
 
   final String email;
 }

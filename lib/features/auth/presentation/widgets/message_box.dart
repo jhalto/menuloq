@@ -43,9 +43,9 @@ class MessageBox extends StatelessWidget {
             child: Text(
               text,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: textColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: textColor,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
           if (actionText != null) ...[
@@ -55,9 +55,9 @@ class MessageBox extends StatelessWidget {
               child: Text(
                 actionText!,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: actionColor ?? AppColors.accent,
-                      fontWeight: FontWeight.w900,
-                    ),
+                  color: actionColor ?? AppColors.accent,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ],

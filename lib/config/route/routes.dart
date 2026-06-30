@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/core/di/dependency_factory.dart';
+import 'package:menuloq/features/auth/domain/enums/verify_email_type.dart';
 import 'package:menuloq/features/auth/presentation/bloc/forgot_password/forgot_password_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/login/auth_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/register/register_bloc.dart';
@@ -41,9 +42,28 @@ class AppRoutes {
         );
 
       case Routes.verifyEmail:
-        final email = settings.arguments as String?;
+        final args = settings.arguments;
 
-        if (email == null || email.trim().isEmpty) {
+        String email = '';
+        VerifyEmailType type = VerifyEmailType.registration;
+
+        if (args is String) {
+          email = args.trim();
+        } else if (args is Map<String, dynamic>) {
+          email = (args['email'] as String? ?? '').trim();
+
+          final rawType = args['type'];
+
+          if (rawType is VerifyEmailType) {
+            type = rawType;
+          } else if (rawType == 'forgot_password') {
+            type = VerifyEmailType.forgotPassword;
+          } else {
+            type = VerifyEmailType.registration;
+          }
+        }
+
+        if (email.isEmpty) {
           return _buildRoute(
             settings: settings,
             child: const Scaffold(
@@ -56,7 +76,37 @@ class AppRoutes {
           settings: settings,
           child: BlocProvider<VerifyEmailBloc>(
             create: (_) => _di.createVerifyEmailBloc(),
-            child: VerifyEmailView(email: email),
+            child: VerifyEmailView(email: email, type: type),
+          ),
+        );
+
+      case Routes.resetPassword:
+        final args = settings.arguments;
+
+        String email = '';
+        String otp = '';
+
+        if (args is Map<String, dynamic>) {
+          email = (args['email'] as String? ?? '').trim();
+          otp = (args['otp'] as String? ?? '').trim();
+        }
+
+        if (email.isEmpty || otp.isEmpty) {
+          return _buildRoute(
+            settings: settings,
+            child: const Scaffold(
+              body: Center(
+                child: Text('Email and OTP are required for password reset.'),
+              ),
+            ),
+          );
+        }
+
+        return _buildRoute(
+          settings: settings,
+          child: BlocProvider<ResetPasswordBloc>(
+            create: (_) => _di.createResetPasswordBloc(),
+            child: ResetPasswordView(initialEmail: email, otp: otp),
           ),
         );
 
@@ -92,10 +142,7 @@ class AppRoutes {
         );
 
       case Routes.dashboard:
-        return _buildRoute(
-          settings: settings,
-          child: const DashboardView(),
-        );
+        return _buildRoute(settings: settings, child: const DashboardView());
 
       default:
         return _buildRoute(

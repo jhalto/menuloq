@@ -1,16 +1,19 @@
-class ChangePasswordRequestModel {
-  const ChangePasswordRequestModel({
-    required this.oldPassword,
+class ResetPasswordRequestModel {
+  const ResetPasswordRequestModel({
+    required this.email,
+    required this.otp,
     required this.newPassword,
     required this.passwordConfirmation,
   });
-
-  final String oldPassword;
+  final String email;
+  final String otp;
   final String newPassword;
   final String passwordConfirmation;
 
   Map<String, dynamic> toJson() => {
-        'current_password': oldPassword,
+         
+        'email': email,
+        'otp': otp,
         'password': newPassword,
         'password_confirmation': passwordConfirmation,
       };

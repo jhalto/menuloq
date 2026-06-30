@@ -15,7 +15,7 @@ abstract class AuthRemoteDataSource {
   Future<LoginResponseModel> login(LoginRequestModel request);
   Future<void> getOtp(String email);
   Future<void> verifyOtp(VerifyOtpRequestModel request);
-  Future<void> changePassword(ChangePasswordRequestModel request);
+  Future<void> resetPassword(ResetPasswordRequestModel request);
 }
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -125,15 +125,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  Future<void> changePassword(ChangePasswordRequestModel request) async {
+  Future<void> resetPassword(ResetPasswordRequestModel request) async {
     try {
       final response = await DioClient.dio.post(
-        ApiEndpoints.changePassword,
+        ApiEndpoints.resetPassword,
         data: request.toJson(),
       );
 
       if (kDebugMode) {
-        debugPrint('Change password success: ${response.data}');
+        debugPrint('Reset password success: ${response.data}');
       }
     } on DioException catch (e) {
       throw AppException(_handleDioError(e));

@@ -40,46 +40,37 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    final request = LoginRequestModel(
-      email: email,
-      password: password,
-    );
+    final request = LoginRequestModel(email: email, password: password);
 
     return _remoteDataSource.login(request);
   }
 
   @override
-  Future<void> getOtp({
-    required String email,
-  }) async {
+  Future<void> getOtp({required String email}) async {
     await _remoteDataSource.getOtp(email.trim());
   }
 
   @override
-  Future<void> verifyOtp({
-    required String email,
-    required String otp,
-  }) async {
-    final request = VerifyOtpRequestModel(
-      email: email,
-      otp: otp,
-    );
+  Future<void> verifyOtp({required String email, required String otp}) async {
+    final request = VerifyOtpRequestModel(email: email, otp: otp);
 
     await _remoteDataSource.verifyOtp(request);
   }
 
   @override
-  Future<void> changePassword({
-    required String oldPassword,
+  Future<void> resetPassword({
+    required String email,
+    required String otp,
     required String newPassword,
     required String passwordConfirmation,
   }) async {
-    final request = ChangePasswordRequestModel(
-      
-      password: password,
+    final request = ResetPasswordRequestModel(
+      email: email,
+      otp: otp,
+      newPassword: newPassword,
       passwordConfirmation: passwordConfirmation,
     );
 
-    await _remoteDataSource.changePassword(request);
+    await _remoteDataSource.resetPassword(request);
   }
 }
