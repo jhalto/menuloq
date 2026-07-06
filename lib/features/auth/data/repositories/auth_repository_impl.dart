@@ -1,3 +1,5 @@
+import 'package:menuloq/core/error/app_exception.dart';
+import 'package:menuloq/features/auth/data/data_sources/local/auth_local_data_source.dart';
 import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_source.dart';
 import 'package:menuloq/features/auth/data/models/change_password_request_model.dart';
 import 'package:menuloq/features/auth/data/models/login_request_model.dart';
@@ -8,9 +10,13 @@ import '../models/register_request_model.dart';
 import '../models/verify_otp_request_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  AuthRepositoryImpl(this._remoteDataSource);
+  AuthRepositoryImpl(
+    this._remoteDataSource,
+    this._localDataSource,
+  );
 
   final AuthRemoteDataSource _remoteDataSource;
+  final AuthLocalDataSource _localDataSource;
 
   @override
   Future<void> register({
@@ -42,7 +48,66 @@ class AuthRepositoryImpl implements AuthRepository {
   }) async {
     final request = LoginRequestModel(email: email, password: password);
 
-    return _remoteDataSource.login(request);
+    final response = await _remoteDataSource.login(request);
+
+    if (response.accessToken.trim().isEmpty) {
+      throw const AppException('Login token not found.');
+    }
+
+    await _localDataSource.saveAuthData(
+      accessToken: response.accessToken,
+      tokenType: response.tokenType,
+      expiresIn: response.expiresIn,
+      userId: response.user.id,
+      userName: response.user.name,
+      userEmail: response.user.email,
+      businessId: response.business.id,
+      businessName: response.business.businessName,
+      businessUserName: response.business.userName,
+    );
+
+    return response;
+  }
+
+  @override
+  Future<LoginResponseModel> refreshToken() async {
+    final oldToken = await _localDataSource.getAccessToken();
+
+    if (oldToken == null || oldToken.trim().isEmpty) {
+      await _localDataSource.clearAuthData();
+      throw const AppException('Session expired. Please login again.');
+    }
+
+    final response = await _remoteDataSource.refreshToken(oldToken);
+
+    if (response.accessToken.trim().isEmpty) {
+      await _localDataSource.clearAuthData();
+      throw const AppException('Session expired. Please login again.');
+    }
+
+    await _localDataSource.saveAuthData(
+      accessToken: response.accessToken,
+      tokenType: response.tokenType,
+      expiresIn: response.expiresIn,
+      userId: response.user.id,
+      userName: response.user.name,
+      userEmail: response.user.email,
+      businessId: response.business.id,
+      businessName: response.business.businessName,
+      businessUserName: response.business.userName,
+    );
+
+    return response;
+  }
+
+  @override
+  Future<bool> isLoggedIn() async {
+    return _localDataSource.hasAccessToken();
+  }
+
+  @override
+  Future<void> logout() async {
+    await _localDataSource.clearAuthData();
   }
 
   @override

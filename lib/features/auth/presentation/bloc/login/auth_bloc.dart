@@ -10,9 +10,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({
     required LoginUseCase loginUseCase,
     required GetOtpUseCase getOtpUseCase,
-  })  : _loginUseCase = loginUseCase,
-        _getOtpUseCase = getOtpUseCase,
-        super(const AuthState()) {
+  }) : this._(loginUseCase: loginUseCase, getOtpUseCase: getOtpUseCase);
+
+  AuthBloc._({required this._loginUseCase, required this._getOtpUseCase})
+    : super(const AuthState()) {
     on<LoginSubmitted>(_onLoginSubmitted);
     on<VerifyEmailRequested>(_onVerifyEmailRequested);
   }
@@ -36,7 +37,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         AuthState(
           status: AuthStatus.success,
           message: result.message,
-          token: result.token,
+          token: result.accessToken,
+        
         ),
       );
     } on AppException catch (e) {
@@ -64,21 +66,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (message.contains('inactive') ||
           message.contains('deactivated') ||
           message.contains('suspended')) {
-        emit(
-          AuthState(
-            status: AuthStatus.inactive,
-            message: e.message,
-          ),
-        );
+        emit(AuthState(status: AuthStatus.inactive, message: e.message));
         return;
       }
 
-      emit(
-        AuthState(
-          status: AuthStatus.failure,
-          message: e.message,
-        ),
-      );
+      emit(AuthState(status: AuthStatus.failure, message: e.message));
     } catch (_) {
       emit(
         const AuthState(

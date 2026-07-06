@@ -3,10 +3,19 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/config/route/routes.dart';
 import 'package:menuloq/config/theme/app_theme.dart';
+import 'package:menuloq/core/di/dependency_factory.dart';
+import 'package:menuloq/core/network/dio_client.dart';
+import 'package:menuloq/core/services/app_install_gaurd.dart';
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env.dev");
+  final di = DependencyFactory.instance;
+  await AppInstallGuard.run(
+    secureStorage: di.secureStorage,
+  );
+  DioClient.init(di.authLocalDataSource);
+
   runApp(const MyApp());
 }
 

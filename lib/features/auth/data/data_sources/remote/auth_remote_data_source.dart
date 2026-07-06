@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:menuloq/core/error/app_exception.dart';
 import 'package:menuloq/core/network/api_endpoints.dart';
 import 'package:menuloq/core/network/dio_client.dart';
+import 'package:menuloq/core/network/handle_error.dart';
 
 import '../../models/change_password_request_model.dart';
 import '../../models/login_request_model.dart';
@@ -13,6 +14,7 @@ import '../../models/verify_otp_request_model.dart';
 abstract class AuthRemoteDataSource {
   Future<void> register(RegisterRequestModel request);
   Future<LoginResponseModel> login(LoginRequestModel request);
+  Future<LoginResponseModel> refreshToken(String accessToken);
   Future<void> getOtp(String email);
   Future<void> verifyOtp(VerifyOtpRequestModel request);
   Future<void> resetPassword(ResetPasswordRequestModel request);
@@ -33,7 +35,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Register success: ${response.data}');
       }
     } on DioException catch (e) {
-      throw AppException(_handleDioError(e));
+      throw AppException(handleDioError(e));
     } catch (_) {
       throw const AppException('Something went wrong. Please try again.');
     }
@@ -47,24 +49,27 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: request.toJson(),
       );
 
-      if (kDebugMode) {
-        debugPrint('Login success: ${response.data}');
-      }
-
-      if (response.data is Map<String, dynamic>) {
-        return LoginResponseModel.fromJson(
-          response.data as Map<String, dynamic>,
-        );
-      }
-
-      return const LoginResponseModel(
-        token: '',
-        message: 'Login successful.',
-      );
+      return LoginResponseModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw AppException(_handleDioError(e));
+      throw AppException(handleDioError(e));
     } catch (_) {
       throw const AppException('Something went wrong. Please try again.');
+    }
+  }
+
+  @override
+  Future<LoginResponseModel> refreshToken(String accessToken) async {
+    try {
+      final response = await DioClient.dio.post(
+        ApiEndpoints.refreshToken,
+        options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
+      );
+
+      return LoginResponseModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw AppException(handleDioError(e));
+    } catch (_) {
+      throw const AppException('Session expired. Please login again.');
     }
   }
 
@@ -80,7 +85,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Get OTP success: ${response.data}');
       }
     } on DioException catch (e) {
-      throw AppException(_handleDioError(e));
+      throw AppException(handleDioError(e));
     } catch (_) {
       throw const AppException('Something went wrong. Please try again.');
     }
@@ -104,7 +109,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Verify OTP success: ${response.data}');
       }
     } on DioException catch (e) {
-      final message = _handleDioError(e);
+      final message = handleDioError(e);
 
       if (kDebugMode) {
         debugPrint('Verify OTP failed');
@@ -136,60 +141,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Reset password success: ${response.data}');
       }
     } on DioException catch (e) {
-      throw AppException(_handleDioError(e));
+      throw AppException(handleDioError(e));
     } catch (_) {
       throw const AppException('Something went wrong. Please try again.');
     }
-  }
-
-  String _handleDioError(DioException e) {
-    final statusCode = e.response?.statusCode;
-    final data = e.response?.data;
-
-    if (statusCode == 422 && data is Map<String, dynamic>) {
-      final errors = data['errors'];
-
-      if (errors is Map && errors.isNotEmpty) {
-        final messages = <String>[];
-
-        for (final value in errors.values) {
-          if (value is List) {
-            for (final item in value) {
-              messages.add(item.toString());
-            }
-          } else {
-            messages.add(value.toString());
-          }
-        }
-
-        if (messages.isNotEmpty) {
-          return messages.join('\n');
-        }
-      }
-
-      return data['message']?.toString() ?? 'Validation failed.';
-    }
-
-    if (data is Map<String, dynamic> && data['message'] != null) {
-      return data['message'].toString();
-    }
-
-    if (statusCode == 400) return 'Invalid request.';
-    if (statusCode == 401) return 'Unauthorized request.';
-    if (statusCode == 403) return 'You do not have permission.';
-    if (statusCode == 404) return 'API endpoint not found.';
-    if (statusCode == 500) return 'Server error. Please try again later.';
-
-    if (e.type == DioExceptionType.connectionTimeout ||
-        e.type == DioExceptionType.receiveTimeout ||
-        e.type == DioExceptionType.sendTimeout) {
-      return 'Connection timeout. Please check your internet.';
-    }
-
-    if (e.type == DioExceptionType.connectionError) {
-      return 'No internet connection or server is unreachable.';
-    }
-
-    return 'Something went wrong. Please try again.';
   }
 }

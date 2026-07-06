@@ -15,15 +15,13 @@ abstract class AuthRepository {
     required String email,
     required String password,
   });
+  Future<LoginResponseModel> refreshToken();
 
-  Future<void> getOtp({
-    required String email,
-  });
+  Future<bool> isLoggedIn();
+  Future<void> logout();
+  Future<void> getOtp({required String email});
 
-  Future<void> verifyOtp({
-    required String email,
-    required String otp,
-  });
+  Future<void> verifyOtp({required String email, required String otp});
 
   Future<void> resetPassword({
     required String email,

@@ -11,9 +11,15 @@ class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
   VerifyEmailBloc({
     required VerifyOtpUseCase verifyOtpUseCase,
     required GetOtpUseCase getOtpUseCase,
-  })  : _verifyOtpUseCase = verifyOtpUseCase,
-        _getOtpUseCase = getOtpUseCase,
-        super(const VerifyEmailState()) {
+  }) : this._(
+          verifyOtpUseCase: verifyOtpUseCase,
+          getOtpUseCase: getOtpUseCase,
+        );
+
+  VerifyEmailBloc._({
+    required this._verifyOtpUseCase,
+    required this._getOtpUseCase,
+  }) : super(const VerifyEmailState()) {
     on<VerifyEmailStarted>(_onStarted);
     on<VerifyEmailTimerTicked>(_onTimerTicked);
     on<VerifyEmailOtpSubmitted>(_onOtpSubmitted);

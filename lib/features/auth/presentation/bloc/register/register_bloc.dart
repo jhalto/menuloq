@@ -10,9 +10,10 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
   RegisterBloc({
     required RegisterUseCase registerUseCase,
     required GetOtpUseCase getOtpUseCase,
-  }) : _registerUseCase = registerUseCase,
-       _getOtpUseCase = getOtpUseCase,
-       super(const RegisterState()) {
+  }) : this._(registerUseCase: registerUseCase, getOtpUseCase: getOtpUseCase);
+
+  RegisterBloc._({required this._registerUseCase, required this._getOtpUseCase})
+    : super(const RegisterState()) {
     on<RegisterBusinessStepSubmitted>(_onBusinessStepSubmitted);
     on<RegisterBackToBusinessRequested>(_onBackToBusinessRequested);
     on<RegisterSubmitted>(_onRegisterSubmitted);
@@ -70,9 +71,7 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
         passwordConfirmation: event.passwordConfirmation,
       );
     } on AppException catch (e) {
-      emit(
-        state.copyWith(status: RegisterStatus.failure, message: e.message),
-      );
+      emit(state.copyWith(status: RegisterStatus.failure, message: e.message));
       return;
     } catch (_) {
       emit(

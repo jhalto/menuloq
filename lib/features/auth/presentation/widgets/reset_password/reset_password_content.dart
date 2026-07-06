@@ -255,15 +255,7 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
     );
   }
 
-  String? _oldPasswordValidator(String? value) {
-    final password = value ?? '';
 
-    if (password.isEmpty) {
-      return 'Please enter your old password.';
-    }
-
-    return null;
-  }
 
   String? _newPasswordValidator(String? value) {
     final password = value ?? '';

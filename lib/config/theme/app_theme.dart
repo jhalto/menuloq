@@ -55,7 +55,6 @@ class AppTheme {
       errorColor: AppColors.error,
       hintColor: AppColors.textMuted,
       textColor: AppColors.textPrimary,
-      
     ),
 
     elevatedButtonTheme: _elevatedButtonTheme(
@@ -390,7 +389,7 @@ class AppTheme {
       ),
       disabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: borderColor.withOpacity(0.5), width: 1),
+        borderSide: BorderSide(color: borderColor.withAlpha(128), width: 1),
       ),
     );
   }
@@ -403,8 +402,8 @@ class AppTheme {
       style: ElevatedButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        disabledBackgroundColor: backgroundColor.withOpacity(0.4),
-        disabledForegroundColor: foregroundColor.withOpacity(0.65),
+        disabledBackgroundColor: backgroundColor.withAlpha(102),
+        disabledForegroundColor: foregroundColor.withAlpha(166),
         elevation: 0,
         shadowColor: Colors.transparent,
         minimumSize: const Size(double.infinity, 52),
@@ -423,8 +422,8 @@ class AppTheme {
       style: FilledButton.styleFrom(
         backgroundColor: backgroundColor,
         foregroundColor: foregroundColor,
-        disabledBackgroundColor: backgroundColor.withOpacity(0.4),
-        disabledForegroundColor: foregroundColor.withOpacity(0.65),
+        disabledBackgroundColor: backgroundColor.withAlpha(102),
+        disabledForegroundColor: foregroundColor.withAlpha(166),
         minimumSize: const Size(120, 46),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -506,7 +505,7 @@ class AppTheme {
     return ChipThemeData(
       backgroundColor: backgroundColor,
       selectedColor: selectedColor,
-      disabledColor: backgroundColor.withOpacity(0.5),
+      disabledColor: backgroundColor.withAlpha(128),
       labelStyle: TextStyle(
         color: labelColor,
         fontSize: 13,
@@ -544,7 +543,7 @@ class AppTheme {
     return ScrollbarThemeData(
       thickness: WidgetStateProperty.all(6),
       radius: const Radius.circular(99),
-      thumbColor: WidgetStateProperty.all(thumbColor.withOpacity(0.65)),
+      thumbColor: WidgetStateProperty.all(thumbColor.withAlpha(166)),
     );
   }
 }
