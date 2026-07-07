@@ -1,3 +1,4 @@
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -715,7 +716,6 @@ class _AccountTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hintText,
             prefixIcon: Icon(icon),
-            errorText: hasServerError ? serverError : null,
           ),
         ),
         if (hasServerError) ...[

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:menuloq/features/account/domain/params/update_my_account_params.dart';
 
 
 sealed class MyAccountEvent extends Equatable {

@@ -35,7 +35,13 @@ class MyAccountRepositoryImpl implements MyAccountRepository {
 
   @override
   Future<MyAccountEntity> updateMyAccount(UpdateMyAccountParams params) async {
-    await _remoteDataSource.updateMyAccount(params);
+    final updatedAccount = await _remoteDataSource.updateMyAccount(params);
+
+    if (updatedAccount != null) {
+      _cachedAccount = updatedAccount;
+      return updatedAccount;
+    }
+
     return getMyAccount(forceRefresh: true);
   }
 }

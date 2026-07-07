@@ -9,7 +9,7 @@ import 'package:menuloq/features/account/domain/params/update_my_account_params.
 abstract class MyAccountRemoteDataSource {
   Future<MyAccountModel> getMyAccount();
 
-  Future<void> updateMyAccount(
+  Future<MyAccountModel?> updateMyAccount(
     UpdateMyAccountParams params,
   );
 }
@@ -60,7 +60,7 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
   }
 
   @override
-  Future<void> updateMyAccount(
+  Future<MyAccountModel?> updateMyAccount(
     UpdateMyAccountParams params,
   ) async {
     try {
@@ -80,7 +80,13 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
                 'Failed to update account details.',
           );
         }
+
+        if (_hasAccountPayload(json)) {
+          return MyAccountModel.fromJson(json);
+        }
       }
+
+      return null;
     } on DioException catch (error) {
       if (error.response?.statusCode == 422) {
         final responseData = error.response?.data;
@@ -134,5 +140,16 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
         value.toString(),
       );
     });
+  }
+
+  bool _hasAccountPayload(Map<String, dynamic> json) {
+    final data = json['data'];
+
+    if (data is! Map) return false;
+
+    final account = Map<String, dynamic>.from(data);
+
+    return account['business'] is Map &&
+        (account['user'] is Map || account.containsKey('name'));
   }
 }
