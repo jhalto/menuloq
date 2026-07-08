@@ -76,6 +76,16 @@ class _LoginContentState extends State<LoginContent> {
       },
       builder: (context, state) {
         final isLoading = state.status == AuthStatus.loading;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final createAccountForeground = isDark
+            ? AppColors.darkAccent
+            : AppColors.accent;
+        final createAccountBackground = isDark
+            ? AppColors.darkAccentLight
+            : AppColors.accentLight;
+        final createAccountBorder = isDark
+            ? AppColors.darkAccent.withAlpha(120)
+            : AppColors.accent.withAlpha(110);
 
         return Form(
           key: _formKey,
@@ -84,12 +94,12 @@ class _LoginContentState extends State<LoginContent> {
             children: [
               if (widget.showLogo) ...[
                 const BrandLogo(),
-                const SizedBox(height: 28),
+                const SizedBox(height: 20),
               ],
               _HeaderSection(),
-              const SizedBox(height: 34),
+              const SizedBox(height: 24),
               const InputLabel(text: 'Email address'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               TextFormField(
                 controller: _emailController,
                 focusNode: _emailFocusNode,
@@ -106,9 +116,9 @@ class _LoginContentState extends State<LoginContent> {
                   _passwordFocusNode.requestFocus();
                 },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               const InputLabel(text: 'Password'),
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               TextFormField(
                 controller: _passwordController,
                 focusNode: _passwordFocusNode,
@@ -137,7 +147,7 @@ class _LoginContentState extends State<LoginContent> {
                 validator: _passwordValidator,
                 onFieldSubmitted: (_) => _submit(),
               ),
-              const SizedBox(height: 8),
+              
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -161,12 +171,28 @@ class _LoginContentState extends State<LoginContent> {
               ),
               const SizedBox(height: 14),
               AuthStateMessage(state: state),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
               const DividerText(text: 'New to MenuLoq?'),
               const SizedBox(height: 24),
               SizedBox(
                 height: 54,
                 child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: createAccountBackground,
+                    foregroundColor: createAccountForeground,
+                    disabledBackgroundColor:
+                        createAccountBackground.withAlpha(90),
+                    disabledForegroundColor:
+                        createAccountForeground.withAlpha(120),
+                    side: BorderSide(color: createAccountBorder),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                   onPressed: isLoading
                       ? null
                       : () {

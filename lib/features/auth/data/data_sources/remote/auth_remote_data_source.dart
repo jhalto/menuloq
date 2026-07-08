@@ -31,13 +31,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: request.toJson(),
       );
 
+      final responseData = response.data;
+      if (responseData is Map && responseData['success'] == false) {
+        throw AppException(
+          message: _extractMessage(responseData),
+          errors: _extractValidationErrors(responseData),
+        );
+      }
+
       if (kDebugMode) {
         debugPrint('Register success: ${response.data}');
       }
     } on DioException catch (e) {
-      throw AppException(handleDioError(e));
+      throw AppException(
+        message: _extractMessage(
+          e.response?.data,
+          fallback: handleDioError(e),
+        ),
+        errors: _extractValidationErrors(e.response?.data),
+      );
+    } on AppException {
+      rethrow;
     } catch (_) {
-      throw const AppException('Something went wrong. Please try again.');
+      throw const AppException(
+        message: 'Something went wrong. Please try again.',
+      );
     }
   }
 
@@ -51,9 +69,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return LoginResponseModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw AppException(handleDioError(e));
+      throw AppException(message: handleDioError(e));
     } catch (_) {
-      throw const AppException('Something went wrong. Please try again.');
+      throw const AppException(
+        message: 'Something went wrong. Please try again.',
+      );
     }
   }
 
@@ -67,9 +87,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       return LoginResponseModel.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw AppException(handleDioError(e));
+      throw AppException(message: handleDioError(e));
     } catch (_) {
-      throw const AppException('Session expired. Please login again.');
+      throw const AppException(
+        message: 'Session expired. Please login again.',
+      );
     }
   }
 
@@ -85,9 +107,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Get OTP success: ${response.data}');
       }
     } on DioException catch (e) {
-      throw AppException(handleDioError(e));
+      throw AppException(message: handleDioError(e));
     } catch (_) {
-      throw const AppException('Something went wrong. Please try again.');
+      throw const AppException(
+        message: 'Something went wrong. Please try again.',
+      );
     }
   }
 
@@ -119,13 +143,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Error Message: $message');
       }
 
-      throw AppException(message);
+      throw AppException(message: message);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Unexpected verify OTP error: $e');
       }
 
-      throw const AppException('Something went wrong. Please try again.');
+      throw const AppException(
+        message: 'Something went wrong. Please try again.',
+      );
     }
   }
 
@@ -141,9 +167,40 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Reset password success: ${response.data}');
       }
     } on DioException catch (e) {
-      throw AppException(handleDioError(e));
+      throw AppException(message: handleDioError(e));
     } catch (_) {
-      throw const AppException('Something went wrong. Please try again.');
+      throw const AppException(
+        message: 'Something went wrong. Please try again.',
+      );
     }
   }
+}
+
+Map<String, List<String>>? _extractValidationErrors(dynamic data) {
+  if (data is! Map) return null;
+
+  final rawErrors = data['errors'];
+  if (rawErrors is! Map || rawErrors.isEmpty) return null;
+
+  return rawErrors.map<String, List<String>>((key, value) {
+    if (value is List) {
+      return MapEntry(
+        key.toString(),
+        value.map((item) => item.toString()).toList(),
+      );
+    }
+
+    return MapEntry(key.toString(), [value.toString()]);
+  });
+}
+
+String _extractMessage(
+  dynamic data, {
+  String fallback = 'The given data was invalid.',
+}) {
+  if (data is Map && data['message'] != null) {
+    return data['message'].toString();
+  }
+
+  return fallback;
 }

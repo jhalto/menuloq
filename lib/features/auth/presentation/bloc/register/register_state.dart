@@ -1,14 +1,6 @@
-enum RegisterStep {
-  business,
-  security,
-}
+enum RegisterStep { business, security }
 
-enum RegisterStatus {
-  initial,
-  loading,
-  success,
-  failure,
-}
+enum RegisterStatus { initial, loading, success, failure }
 
 class RegisterState {
   const RegisterState({
@@ -20,6 +12,9 @@ class RegisterState {
     this.ownerName = '',
     this.email = '',
     this.mobileNumber = '',
+    this.emailError,
+    this.subdomainError,
+    this.mobileError,
   });
 
   final RegisterStep step;
@@ -32,6 +27,10 @@ class RegisterState {
   final String email;
   final String mobileNumber;
 
+  final String? emailError;
+  final String? subdomainError;
+  final String? mobileError;
+
   RegisterState copyWith({
     RegisterStep? step,
     RegisterStatus? status,
@@ -42,6 +41,10 @@ class RegisterState {
     String? ownerName,
     String? email,
     String? mobileNumber,
+    String? emailError,
+    String? subdomainError,
+    String? mobileError,
+    bool clearFieldErrors = false,
   }) {
     return RegisterState(
       step: step ?? this.step,
@@ -52,6 +55,9 @@ class RegisterState {
       ownerName: ownerName ?? this.ownerName,
       email: email ?? this.email,
       mobileNumber: mobileNumber ?? this.mobileNumber,
+      emailError: clearFieldErrors ? null : emailError ?? this.emailError,
+      subdomainError: clearFieldErrors ? null : subdomainError ?? this.subdomainError,
+      mobileError: clearFieldErrors ? null : mobileError ?? this.mobileError,
     );
   }
 }

@@ -6,11 +6,13 @@ class BusinessDomainField extends StatelessWidget {
     required this.controller,
     required this.enabled,
     required this.validator,
+    this.onChanged,
   });
 
   final TextEditingController controller;
   final bool enabled;
   final FormFieldValidator<String> validator;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +66,7 @@ class BusinessDomainField extends StatelessWidget {
         ),
       ),
       validator: validator,
+      onChanged: onChanged,
     );
   }
 }

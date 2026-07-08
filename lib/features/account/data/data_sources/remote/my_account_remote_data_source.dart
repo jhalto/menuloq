@@ -32,7 +32,7 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
 
       if (responseData is! Map) {
         throw const AppException(
-          'Invalid account response.',
+          message: 'Invalid account response.',
         );
       }
 
@@ -40,7 +40,7 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
 
       if (json['success'] != true) {
         throw AppException(
-          json['message']?.toString() ??
+          message: json['message']?.toString() ??
               'Failed to retrieve account details.',
         );
       }
@@ -48,13 +48,13 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
       return MyAccountModel.fromJson(json);
     } on DioException catch (error) {
       throw AppException(
-        handleDioError(error),
+        message: handleDioError(error),
       );
     } on AppException {
       rethrow;
     } catch (_) {
       throw const AppException(
-        'Something went wrong while loading account details.',
+        message: 'Something went wrong while loading account details.',
       );
     }
   }
@@ -76,7 +76,7 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
 
         if (json['success'] == false) {
           throw AppException(
-            json['message']?.toString() ??
+            message: json['message']?.toString() ??
                 'Failed to update account details.',
           );
         }
@@ -98,7 +98,7 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
       }
 
       throw AppException(
-        handleDioError(error),
+        message: handleDioError(error),
       );
     } on MyAccountValidationException {
       rethrow;
@@ -106,7 +106,7 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
       rethrow;
     } catch (_) {
       throw const AppException(
-        'Something went wrong while updating account details.',
+        message: 'Something went wrong while updating account details.',
       );
     }
   }

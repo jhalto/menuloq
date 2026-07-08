@@ -3,14 +3,19 @@ import 'package:flutter/material.dart';
 import '../../../../config/theme/app_colors.dart';
 
 class LoadingButtonContent extends StatelessWidget {
-  const LoadingButtonContent({super.key});
+  const LoadingButtonContent({
+    super.key,
+    this.label = 'Signing in...',
+  });
+
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(
+        const SizedBox(
           width: 22,
           height: 22,
           child: CircularProgressIndicator(
@@ -18,8 +23,8 @@ class LoadingButtonContent extends StatelessWidget {
             valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
           ),
         ),
-        SizedBox(width: 12),
-        Text('Signing in...'),
+        const SizedBox(width: 12),
+        Text(label),
       ],
     );
   }

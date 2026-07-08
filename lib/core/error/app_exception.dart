@@ -1,8 +1,9 @@
 class AppException implements Exception {
-  const AppException(this.message);
+  const AppException({
+    required this.message,
+    this.errors,
+  });
 
   final String message;
-
-  @override
-  String toString() => message;
+  final Map<String, List<String>>? errors;
 }

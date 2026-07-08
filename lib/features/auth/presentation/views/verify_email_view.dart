@@ -8,7 +8,6 @@ import '../../../../config/theme/app_colors.dart';
 import '../bloc/verify_email/verify_email_bloc.dart';
 import '../bloc/verify_email/verify_email_event.dart';
 import '../bloc/verify_email/verify_email_state.dart';
-import '../widgets/loading_button_content.dart';
 import '../widgets/message_box.dart';
 
 class VerifyEmailView extends StatefulWidget {
@@ -192,9 +191,9 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
         }
       },
       builder: (context, state) {
-        final isLoading =
-            state.status == VerifyEmailStatus.loading ||
-            state.status == VerifyEmailStatus.resendLoading;
+        final isVerifying = state.status == VerifyEmailStatus.loading;
+        final isResending = state.status == VerifyEmailStatus.resendLoading;
+        final isBusy = isVerifying || isResending;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -203,7 +202,7 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
-                  onPressed: isLoading ? null : () => Navigator.pop(context),
+                  onPressed: isBusy ? null : () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
               ),
@@ -242,13 +241,13 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
             ),
             const SizedBox(height: 8),
             TextButton(
-              onPressed: isLoading ? null : () => Navigator.pop(context),
+              onPressed: isBusy ? null : () => Navigator.pop(context),
               child: const Text('Change email'),
             ),
             const SizedBox(height: 26),
             OtpCodeField(
               key: _otpKey,
-              enabled: !isLoading && !state.isExpired,
+              enabled: !isBusy && !state.isExpired,
               onCompleted: (code) {
                 _otpCode = code;
               },
@@ -261,6 +260,17 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
+            ),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: isBusy || state.isExpired
+                  ? null
+                  : () async {
+                      await _otpKey.currentState?.pasteFromClipboard();
+                      _otpCode = _otpKey.currentState?.code ?? '';
+                    },
+              icon: const Icon(Icons.content_paste_rounded),
+              label: const Text('Paste code'),
             ),
             const SizedBox(height: 24),
             Text.rich(
@@ -286,16 +296,12 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
             SizedBox(
               height: 56,
               child: ElevatedButton(
-                onPressed: isLoading || state.isExpired ? null : _submit,
-                child: isLoading
-                    ? const LoadingButtonContent()
+                onPressed: isBusy || state.isExpired ? null : _submit,
+                child: isVerifying
+                    ? const _VerifyButtonLoadingContent()
                     : const Text('Verify OTP'),
               ),
             ),
-            if (state.status == VerifyEmailStatus.loading) ...[
-              const SizedBox(height: 14),
-              const _VerifyingBox(),
-            ],
             const SizedBox(height: 28),
             Text(
               'Didn’t receive the code?',
@@ -308,7 +314,8 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
             const SizedBox(height: 14),
             _ResendSection(
               resendIn: state.resendIn,
-              canResend: state.canResend && !isLoading,
+              canResend: state.canResend && !isBusy,
+              isLoading: isResending,
               onResend: () {
                 _otpCode = '';
                 _otpKey.currentState?.clear();
@@ -327,7 +334,7 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
             const SizedBox(height: 14),
 
             TextButton.icon(
-              onPressed: isLoading
+              onPressed: isBusy
                   ? null
                   : () {
                       Navigator.pushNamedAndRemoveUntil(
@@ -371,11 +378,13 @@ class _ResendSection extends StatelessWidget {
   const _ResendSection({
     required this.resendIn,
     required this.canResend,
+    required this.isLoading,
     required this.onResend,
   });
 
   final int resendIn;
   final bool canResend;
+  final bool isLoading;
   final VoidCallback onResend;
 
   @override
@@ -398,8 +407,31 @@ class _ResendSection extends StatelessWidget {
         ),
         TextButton(
           onPressed: canResend ? onResend : null,
-          child: const Text('Resend code'),
+          child: Text(isLoading ? 'Resending...' : 'Resend code'),
         ),
+      ],
+    );
+  }
+}
+
+class _VerifyButtonLoadingContent extends StatelessWidget {
+  const _VerifyButtonLoadingContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.4,
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+          ),
+        ),
+        SizedBox(width: 12),
+        Text('Verifying...'),
       ],
     );
   }
@@ -463,44 +495,6 @@ class _StatusMessage extends StatelessWidget {
       case VerifyEmailStatus.resendLoading:
         return const SizedBox.shrink();
     }
-  }
-}
-
-class _VerifyingBox extends StatelessWidget {
-  const _VerifyingBox();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 56,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.accentLight,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.accent),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Verifying...',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppColors.accent,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

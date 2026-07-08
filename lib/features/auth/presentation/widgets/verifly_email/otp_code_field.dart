@@ -61,22 +61,31 @@ class OtpCodeFieldState extends State<OtpCodeField> {
     _focusNodes.first.requestFocus();
   }
 
+  Future<void> pasteFromClipboard() async {
+    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    _handlePaste(clipboardData?.text ?? '');
+  }
+
   void _handlePaste(String value) {
     final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
 
     if (digits.isEmpty) return;
+    final codeDigits = digits.substring(
+      0,
+      digits.length > widget.length ? widget.length : digits.length,
+    );
 
     for (var i = 0; i < widget.length; i++) {
-      _controllers[i].text = i < digits.length ? digits[i] : '';
+      _controllers[i].text = i < codeDigits.length ? codeDigits[i] : '';
     }
 
-    final nextIndex = digits.length >= widget.length
+    final nextIndex = codeDigits.length >= widget.length
         ? widget.length - 1
-        : digits.length;
+        : codeDigits.length;
 
     _focusNodes[nextIndex].requestFocus();
 
-    if (digits.length >= widget.length) {
+    if (codeDigits.length >= widget.length) {
       widget.onCompleted(code);
     }
 
@@ -113,6 +122,18 @@ class OtpCodeFieldState extends State<OtpCodeField> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.textPrimary;
+    final fillColor = isDark ? AppColors.darkFill : AppColors.surface;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final focusedBorderColor = isDark ? AppColors.darkAccent : AppColors.accent;
+    final disabledBorderColor = isDark
+        ? AppColors.darkBorder.withAlpha(120)
+        : AppColors.border;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: List.generate(widget.length, (index) {
@@ -128,35 +149,37 @@ class OtpCodeFieldState extends State<OtpCodeField> {
               enabled: widget.enabled,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,
+              autofillHints: const [AutofillHints.oneTimeCode],
               textInputAction: index == widget.length - 1
                   ? TextInputAction.done
                   : TextInputAction.next,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
               ],
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.textPrimary,
+              cursorColor: focusedBorderColor,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                    color: textColor,
                     fontWeight: FontWeight.w900,
                   ),
               decoration: InputDecoration(
                 counterText: '',
                 contentPadding: EdgeInsets.zero,
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surface,
+                fillColor: fillColor,
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: borderColor),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
-                    color: AppColors.accent,
+                  borderSide: BorderSide(
+                    color: focusedBorderColor,
                     width: 1.4,
                   ),
                 ),
                 disabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: disabledBorderColor),
                 ),
               ),
               onChanged: (value) => _onChanged(value, index),

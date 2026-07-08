@@ -21,6 +21,11 @@ class RegisterBusinessStepSubmitted extends RegisterEvent {
 class RegisterBackToBusinessRequested extends RegisterEvent {
   const RegisterBackToBusinessRequested();
 }
+
+class RegisterBusinessFieldsChanged extends RegisterEvent {
+  const RegisterBusinessFieldsChanged();
+}
+
 class RegisterSubmitted extends RegisterEvent {
   const RegisterSubmitted({
     required this.businessName,

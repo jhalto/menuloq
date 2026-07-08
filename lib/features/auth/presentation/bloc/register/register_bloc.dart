@@ -16,16 +16,63 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
     : super(const RegisterState()) {
     on<RegisterBusinessStepSubmitted>(_onBusinessStepSubmitted);
     on<RegisterBackToBusinessRequested>(_onBackToBusinessRequested);
+    on<RegisterBusinessFieldsChanged>(_onBusinessFieldsChanged);
     on<RegisterSubmitted>(_onRegisterSubmitted);
   }
 
   final RegisterUseCase _registerUseCase;
   final GetOtpUseCase _getOtpUseCase;
-
   Future<void> _onBusinessStepSubmitted(
     RegisterBusinessStepSubmitted event,
     Emitter<RegisterState> emit,
   ) async {
+    emit(
+      state.copyWith(
+        status: RegisterStatus.loading,
+        clearMessage: true,
+        clearFieldErrors: true,
+      ),
+    );
+
+    try {
+      await _registerUseCase(
+        businessName: event.businessName,
+        userName: event.subdomain,
+        ownerName: event.ownerName,
+        email: event.email,
+        mobileNumber: event.mobileNumber,
+        password: '',
+        passwordConfirmation: '',
+      );
+    } on AppException catch (e) {
+      final errors = e.errors ?? {};
+
+      final userNameError = errors['user_name']?.first;
+      final emailError = errors['business_email']?.first;
+      final mobileError = errors['business_mobile_number']?.first;
+
+      final onlyPasswordError =
+          errors.isNotEmpty &&
+          errors.keys.every(
+            (key) => key == 'password' || key == 'password_confirmation',
+          );
+
+      if (onlyPasswordError) {
+        // allow continue
+      } else {
+        emit(
+          state.copyWith(
+            status: RegisterStatus.failure,
+            subdomainError: userNameError,
+            emailError: emailError,
+            mobileError: mobileError,
+            message: e.message,
+          ),
+        );
+        return;
+      }
+    }
+
     emit(
       state.copyWith(
         step: RegisterStep.security,
@@ -49,6 +96,26 @@ class RegisterBloc extends Bloc<RegisterEvent, RegisterState> {
         step: RegisterStep.business,
         status: RegisterStatus.initial,
         clearMessage: true,
+      ),
+    );
+  }
+
+  void _onBusinessFieldsChanged(
+    RegisterBusinessFieldsChanged event,
+    Emitter<RegisterState> emit,
+  ) {
+    if (state.emailError == null &&
+        state.subdomainError == null &&
+        state.mobileError == null &&
+        state.message == null) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: RegisterStatus.initial,
+        clearMessage: true,
+        clearFieldErrors: true,
       ),
     );
   }

@@ -51,7 +51,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final response = await _remoteDataSource.login(request);
 
     if (response.accessToken.trim().isEmpty) {
-      throw const AppException('Login token not found.');
+      throw const AppException(message: 'Login token not found.');
     }
 
     await _localDataSource.saveAuthData(
@@ -75,14 +75,18 @@ class AuthRepositoryImpl implements AuthRepository {
 
     if (oldToken == null || oldToken.trim().isEmpty) {
       await _localDataSource.clearAuthData();
-      throw const AppException('Session expired. Please login again.');
+      throw const AppException(
+        message: 'Session expired. Please login again.',
+      );
     }
 
     final response = await _remoteDataSource.refreshToken(oldToken);
 
     if (response.accessToken.trim().isEmpty) {
       await _localDataSource.clearAuthData();
-      throw const AppException('Session expired. Please login again.');
+      throw const AppException(
+        message: 'Session expired. Please login again.',
+      );
     }
 
     await _localDataSource.saveAuthData(

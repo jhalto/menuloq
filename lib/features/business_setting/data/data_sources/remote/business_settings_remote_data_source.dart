@@ -21,19 +21,21 @@ class BusinessSettingsRemoteDataSourceImpl
       final response = await _dio.get(ApiEndpoints.getBusinessSettings);
 
       if (response.data is! Map<String, dynamic>) {
-        throw const AppException('Invalid business settings response.');
+        throw const AppException(
+          message: 'Invalid business settings response.',
+        );
       }
 
       return BusinessSettingsModel.fromJson(
         response.data as Map<String, dynamic>,
       );
     } on DioException catch (e) {
-      throw AppException(handleDioError(e));
+      throw AppException(message: handleDioError(e));
     } on AppException {
       rethrow;
-    } catch (e) {
+    } catch (_) {
       throw const AppException(
-        'Something went wrong while loading business settings.',
+        message: 'Something went wrong while loading business settings.',
       );
     }
   }
