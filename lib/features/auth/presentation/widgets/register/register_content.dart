@@ -4,6 +4,7 @@ import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/config/theme/app_colors.dart';
 import 'package:menuloq/core/global/brand_word_mark.dart';
 import 'package:menuloq/core/global/app_toast.dart';
+import 'package:menuloq/core/helper/go_url_helper.dart';
 import 'package:menuloq/core/widgets/mobile_number_form_field.dart';
 import 'package:menuloq/features/auth/presentation/bloc/register/register_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/register/register_event.dart';
@@ -33,18 +34,22 @@ class _RegisterContentState extends State<RegisterContent> {
   final _ownerNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
+  final _businessAddressController = TextEditingController();
 
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   final _mobileFocusNode = FocusNode();
+  final _businessAddressFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _confirmPasswordFocusNode = FocusNode();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _termsAccepted = false;
   String _countryCode = '+880';
   String _countryIsoCode = 'BD';
+  RegisterStep _lastStep = RegisterStep.business;
 
   String _buildFullMobileNumber() {
     return MobileNumberFormField.toInternationalNumber(
@@ -60,9 +65,11 @@ class _RegisterContentState extends State<RegisterContent> {
     _ownerNameController.dispose();
     _emailController.dispose();
     _mobileController.dispose();
+    _businessAddressController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _mobileFocusNode.dispose();
+    _businessAddressFocusNode.dispose();
     _passwordFocusNode.dispose();
     _confirmPasswordFocusNode.dispose();
     super.dispose();
@@ -80,6 +87,7 @@ class _RegisterContentState extends State<RegisterContent> {
         ownerName: _ownerNameController.text.trim(),
         email: _emailController.text.trim(),
         mobileNumber: _buildFullMobileNumber(),
+        businessAddress: _businessAddressController.text.trim(),
       ),
     );
   }
@@ -91,6 +99,7 @@ class _RegisterContentState extends State<RegisterContent> {
         state.emailError != null ||
         state.subdomainError != null ||
         state.mobileError != null ||
+        state.businessAddressError != null ||
         state.message != null;
 
     bloc.add(const RegisterBusinessFieldsChanged());
@@ -107,13 +116,35 @@ class _RegisterContentState extends State<RegisterContent> {
 
     if (!(_securityFormKey.currentState?.validate() ?? false)) return;
 
+    final state = context.read<RegisterBloc>().state;
+    final businessName = state.businessName.trim().isNotEmpty
+        ? state.businessName
+        : _businessNameController.text.trim();
+    final userName = state.subdomain.trim().isNotEmpty
+        ? state.subdomain
+        : _businessDomainController.text.trim().toLowerCase();
+    final ownerName = state.ownerName.trim().isNotEmpty
+        ? state.ownerName
+        : _ownerNameController.text.trim();
+    final email = state.email.trim().isNotEmpty
+        ? state.email
+        : _emailController.text.trim();
+    final mobileNumber = state.mobileNumber.trim().isNotEmpty
+        ? state.mobileNumber
+        : _buildFullMobileNumber();
+    final businessAddress = state.businessAddress.trim().isNotEmpty
+        ? state.businessAddress
+        : _businessAddressController.text.trim();
+
     context.read<RegisterBloc>().add(
       RegisterSubmitted(
-        businessName: _businessNameController.text.trim(),
-        userName: _businessDomainController.text.trim().toLowerCase(),
-        ownerName: _ownerNameController.text.trim(),
-        email: _emailController.text.trim(),
-        mobileNumber: _buildFullMobileNumber(),
+        businessName: businessName,
+        userName: userName,
+        ownerName: ownerName,
+        email: email,
+        mobileNumber: mobileNumber,
+        businessAddress: businessAddress,
+        termsAccepted: _termsAccepted,
         password: _passwordController.text,
         passwordConfirmation: _confirmPasswordController.text,
       ),
@@ -124,9 +155,22 @@ class _RegisterContentState extends State<RegisterContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<RegisterBloc, RegisterState>(
       listener: (context, state) {
-        if (state.status == RegisterStatus.failure &&
-            state.message != null) {
-          AppToast.error(context, message: state.message!);
+        final movedToSecurity =
+            _lastStep != RegisterStep.security &&
+            state.step == RegisterStep.security;
+        _lastStep = state.step;
+
+        if (movedToSecurity) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _passwordFocusNode.requestFocus();
+          });
+        }
+
+        if (state.status == RegisterStatus.failure) {
+          if (state.message != null) {
+            AppToast.error(context, message: state.message!);
+          }
 
           if (state.step == RegisterStep.business) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -168,10 +212,13 @@ class _RegisterContentState extends State<RegisterContent> {
                       ownerNameController: _ownerNameController,
                       emailController: _emailController,
                       mobileController: _mobileController,
+                      businessAddressController: _businessAddressController,
                       mobileFocusNode: _mobileFocusNode,
+                      businessAddressFocusNode: _businessAddressFocusNode,
                       emailError: state.emailError,
                       subdomainError: state.subdomainError,
                       mobileError: state.mobileError,
+                      businessAddressError: state.businessAddressError,
                       countryIsoCode: _countryIsoCode,
                       onMobileChanged: (value) {
                         _countryCode = value.dialCode;
@@ -191,6 +238,7 @@ class _RegisterContentState extends State<RegisterContent> {
                       confirmPasswordFocusNode: _confirmPasswordFocusNode,
                       obscurePassword: _obscurePassword,
                       obscureConfirmPassword: _obscureConfirmPassword,
+                      termsAccepted: _termsAccepted,
                       onBack: () {
                         context.read<RegisterBloc>().add(
                           const RegisterBackToBusinessRequested(),
@@ -205,6 +253,23 @@ class _RegisterContentState extends State<RegisterContent> {
                         setState(() {
                           _obscureConfirmPassword = !_obscureConfirmPassword;
                         });
+                      },
+                      onTermsChanged: (value) {
+                        setState(() {
+                          _termsAccepted = value;
+                        });
+                      },
+                      onTermsTap: () async {
+                        final opened = await GoUrlHelper.open(
+                          'https://menuloq.com/terms-and-conditions',
+                        );
+
+                        if (!opened && context.mounted) {
+                          AppToast.error(
+                            context,
+                            message: 'Could not open Terms & Conditions.',
+                          );
+                        }
                       },
                       onSubmit: _createAccount,
                       passwordValidator: _passwordValidator,
@@ -269,7 +334,9 @@ class _BusinessStepForm extends StatelessWidget {
     required this.ownerNameController,
     required this.emailController,
     required this.mobileController,
+    required this.businessAddressController,
     required this.mobileFocusNode,
+    required this.businessAddressFocusNode,
     required this.countryIsoCode,
     required this.onMobileChanged,
     required this.onChanged,
@@ -277,6 +344,7 @@ class _BusinessStepForm extends StatelessWidget {
     required this.emailError,
     required this.subdomainError,
     required this.mobileError,
+    required this.businessAddressError,
   });
 
   final GlobalKey<FormState> formKey;
@@ -286,7 +354,9 @@ class _BusinessStepForm extends StatelessWidget {
   final TextEditingController ownerNameController;
   final TextEditingController emailController;
   final TextEditingController mobileController;
+  final TextEditingController businessAddressController;
   final FocusNode mobileFocusNode;
+  final FocusNode businessAddressFocusNode;
   final VoidCallback onContinue;
   final VoidCallback onChanged;
   final String countryIsoCode;
@@ -294,6 +364,7 @@ class _BusinessStepForm extends StatelessWidget {
   final String? emailError;
   final String? subdomainError;
   final String? mobileError;
+  final String? businessAddressError;
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +436,7 @@ class _BusinessStepForm extends StatelessWidget {
             focusNode: mobileFocusNode,
             enabled: !isLoading,
             initialCountryCode: countryIsoCode,
-            textInputAction: TextInputAction.done,
+            textInputAction: TextInputAction.next,
             validator: (value) =>
                 _mobileValidator(
                   value,
@@ -375,6 +446,28 @@ class _BusinessStepForm extends StatelessWidget {
             onChanged: (value) {
               onMobileChanged(value);
             },
+            onFieldSubmitted: (_) {
+              businessAddressFocusNode.requestFocus();
+            },
+          ),
+          const SizedBox(height: 18),
+          const InputLabel(text: 'Business address'),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: businessAddressController,
+            focusNode: businessAddressFocusNode,
+            enabled: !isLoading,
+            textInputAction: TextInputAction.done,
+            decoration: const InputDecoration(
+              hintText: 'Enter business address',
+              prefixIcon: Icon(Icons.location_on_outlined),
+            ),
+            validator: (value) =>
+                _requiredValidator(
+                  'Please enter business address.',
+                  apiError: businessAddressError,
+                )(value),
+            onChanged: (_) => onChanged(),
             onFieldSubmitted: (_) => onContinue(),
           ),
           const SizedBox(height: 28),
@@ -475,9 +568,12 @@ class _SecurityStepForm extends StatelessWidget {
     required this.confirmPasswordFocusNode,
     required this.obscurePassword,
     required this.obscureConfirmPassword,
+    required this.termsAccepted,
     required this.onBack,
     required this.onPasswordVisibilityTap,
     required this.onConfirmVisibilityTap,
+    required this.onTermsChanged,
+    required this.onTermsTap,
     required this.onSubmit,
     required this.passwordValidator,
     required this.confirmPasswordValidator,
@@ -491,9 +587,12 @@ class _SecurityStepForm extends StatelessWidget {
   final FocusNode confirmPasswordFocusNode;
   final bool obscurePassword;
   final bool obscureConfirmPassword;
+  final bool termsAccepted;
   final VoidCallback onBack;
   final VoidCallback onPasswordVisibilityTap;
   final VoidCallback onConfirmVisibilityTap;
+  final ValueChanged<bool> onTermsChanged;
+  final VoidCallback onTermsTap;
   final VoidCallback onSubmit;
   final FormFieldValidator<String> passwordValidator;
   final FormFieldValidator<String> confirmPasswordValidator;
@@ -560,11 +659,121 @@ class _SecurityStepForm extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            'Use at least 8 characters, including a letter, a number, and a symbol.',
+            'Use at least 8 characters.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
               height: 1.45,
             ),
+          ),
+          const SizedBox(height: 18),
+          FormField<bool>(
+            initialValue: termsAccepted,
+            validator: (_) {
+              if (!termsAccepted) {
+                return 'Please accept the Terms & Conditions to create your account.';
+              }
+
+              return null;
+            },
+            builder: (field) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 1),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: termsAccepted,
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            onChanged: isLoading
+                                ? null
+                                : (value) {
+                                    final nextValue = value ?? false;
+                                    onTermsChanged(nextValue);
+                                    field.didChange(nextValue);
+                                  },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(8),
+                          onTap: isLoading
+                              ? null
+                              : () {
+                                  final nextValue = !termsAccepted;
+                                  onTermsChanged(nextValue);
+                                  field.didChange(nextValue);
+                                },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Wrap(
+                              spacing: 2,
+                              runSpacing: 2,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Text(
+                                  'I accept the ',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.35,
+                                      ),
+                                ),
+                                TextButton(
+                                  onPressed: isLoading ? null : onTermsTap,
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    textStyle: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w900,
+                                          height: 1.35,
+                                        ),
+                                  ),
+                                  child: const Text('Terms & Conditions'),
+                                ),
+                                Text(
+                                  '.',
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: AppColors.textSecondary,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.35,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (field.errorText != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      field.errorText!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
           const SizedBox(height: 34),
           Row(

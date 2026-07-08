@@ -12,9 +12,11 @@ class RegisterState {
     this.ownerName = '',
     this.email = '',
     this.mobileNumber = '',
+    this.businessAddress = '',
     this.emailError,
     this.subdomainError,
     this.mobileError,
+    this.businessAddressError,
   });
 
   final RegisterStep step;
@@ -26,10 +28,12 @@ class RegisterState {
   final String ownerName;
   final String email;
   final String mobileNumber;
+  final String businessAddress;
 
   final String? emailError;
   final String? subdomainError;
   final String? mobileError;
+  final String? businessAddressError;
 
   RegisterState copyWith({
     RegisterStep? step,
@@ -41,9 +45,11 @@ class RegisterState {
     String? ownerName,
     String? email,
     String? mobileNumber,
+    String? businessAddress,
     String? emailError,
     String? subdomainError,
     String? mobileError,
+    String? businessAddressError,
     bool clearFieldErrors = false,
   }) {
     return RegisterState(
@@ -55,9 +61,12 @@ class RegisterState {
       ownerName: ownerName ?? this.ownerName,
       email: email ?? this.email,
       mobileNumber: mobileNumber ?? this.mobileNumber,
+      businessAddress: businessAddress ?? this.businessAddress,
       emailError: clearFieldErrors ? null : emailError ?? this.emailError,
       subdomainError: clearFieldErrors ? null : subdomainError ?? this.subdomainError,
       mobileError: clearFieldErrors ? null : mobileError ?? this.mobileError,
+      businessAddressError:
+          clearFieldErrors ? null : businessAddressError ?? this.businessAddressError,
     );
   }
 }

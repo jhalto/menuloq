@@ -25,6 +25,8 @@ class AuthRepositoryImpl implements AuthRepository {
     required String ownerName,
     required String email,
     required String mobileNumber,
+    required String businessAddress,
+    required bool termsAccepted,
     required String password,
     required String passwordConfirmation,
   }) async {
@@ -34,6 +36,8 @@ class AuthRepositoryImpl implements AuthRepository {
       ownerName: ownerName,
       email: email,
       mobileNumber: mobileNumber,
+      businessAddress: businessAddress,
+      termsAccepted: termsAccepted,
       password: password,
       passwordConfirmation: passwordConfirmation,
     );

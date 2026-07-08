@@ -61,11 +61,6 @@ class OtpCodeFieldState extends State<OtpCodeField> {
     _focusNodes.first.requestFocus();
   }
 
-  Future<void> pasteFromClipboard() async {
-    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-    _handlePaste(clipboardData?.text ?? '');
-  }
-
   void _handlePaste(String value) {
     final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
 
@@ -146,6 +141,7 @@ class OtpCodeFieldState extends State<OtpCodeField> {
             child: TextFormField(
               controller: _controllers[index],
               focusNode: _focusNodes[index],
+              autofocus: index == 0,
               enabled: widget.enabled,
               textAlign: TextAlign.center,
               keyboardType: TextInputType.number,

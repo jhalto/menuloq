@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:menuloq/core/error/app_exception.dart';
@@ -31,11 +33,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: request.toJson(),
       );
 
-      final responseData = response.data;
+      final responseData = _decodeResponseData(response.data);
       if (responseData is Map && responseData['success'] == false) {
+        final message = _extractMessage(responseData);
+        final errors = _extractValidationErrors(responseData);
+
+        if (kDebugMode) {
+          debugPrint('========== REGISTER API VALIDATION ==========');
+          debugPrint('Status Code: ${response.statusCode}');
+          debugPrint('Raw Response: ${response.data}');
+          debugPrint('Parsed Message: $message');
+          debugPrint('Parsed Errors: $errors');
+          debugPrint('=============================================');
+        }
+
         throw AppException(
-          message: _extractMessage(responseData),
-          errors: _extractValidationErrors(responseData),
+          message: message,
+          errors: errors,
         );
       }
 
@@ -43,13 +57,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Register success: ${response.data}');
       }
     } on DioException catch (e) {
-      throw AppException(
-        message: _extractMessage(
-          e.response?.data,
-          fallback: handleDioError(e),
-        ),
-        errors: _extractValidationErrors(e.response?.data),
+      final message = _extractMessage(
+        e.response?.data,
+        fallback: handleDioError(e),
       );
+      final errors = _extractValidationErrors(e.response?.data);
+
+      if (kDebugMode) {
+        debugPrint('========== REGISTER API ERROR ==========');
+        debugPrint('URL: ${e.requestOptions.uri}');
+        debugPrint('Status Code: ${e.response?.statusCode}');
+        debugPrint('Raw Response: ${e.response?.data}');
+        debugPrint('Parsed Message: $message');
+        debugPrint('Parsed Errors: $errors');
+        debugPrint('========================================');
+      }
+
+      throw AppException(message: message, errors: errors);
     } on AppException {
       rethrow;
     } catch (_) {
@@ -129,11 +153,31 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         data: request.toJson(),
       );
 
+      final responseData = _decodeResponseData(response.data);
+      if (responseData is Map && responseData['success'] == false) {
+        final message = _extractMessage(responseData);
+        final errors = _extractValidationErrors(responseData);
+
+        if (kDebugMode) {
+          debugPrint('========== VERIFY OTP API VALIDATION ==========');
+          debugPrint('Status Code: ${response.statusCode}');
+          debugPrint('Raw Response: ${response.data}');
+          debugPrint('Parsed Message: $message');
+          debugPrint('Parsed Errors: $errors');
+          debugPrint('===============================================');
+        }
+
+        throw AppException(message: message, errors: errors);
+      }
+
       if (kDebugMode) {
         debugPrint('Verify OTP success: ${response.data}');
       }
     } on DioException catch (e) {
-      final message = handleDioError(e);
+      final message = _extractMessage(
+        e.response?.data,
+        fallback: handleDioError(e),
+      );
 
       if (kDebugMode) {
         debugPrint('Verify OTP failed');
@@ -143,7 +187,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         debugPrint('Error Message: $message');
       }
 
-      throw AppException(message: message);
+      throw AppException(
+        message: message,
+        errors: _extractValidationErrors(e.response?.data),
+      );
+    } on AppException {
+      rethrow;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('Unexpected verify OTP error: $e');
@@ -177,6 +226,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 }
 
 Map<String, List<String>>? _extractValidationErrors(dynamic data) {
+  final parsedData = _decodeResponseData(data);
+
+  if (parsedData != data) {
+    return _extractValidationErrors(parsedData);
+  }
+
   if (data is! Map) return null;
 
   final rawErrors = data['errors'];
@@ -198,9 +253,22 @@ String _extractMessage(
   dynamic data, {
   String fallback = 'The given data was invalid.',
 }) {
-  if (data is Map && data['message'] != null) {
-    return data['message'].toString();
+  final parsedData = _decodeResponseData(data);
+
+  if (parsedData is Map && parsedData['message'] != null) {
+    final message = parsedData['message'].toString().trim();
+    if (message.isNotEmpty) return message;
   }
 
   return fallback;
+}
+
+dynamic _decodeResponseData(dynamic data) {
+  if (data is! String) return data;
+
+  try {
+    return jsonDecode(data);
+  } catch (_) {
+    return data;
+  }
 }

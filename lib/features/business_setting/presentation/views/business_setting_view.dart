@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/core/di/dependency_factory.dart';
+import 'package:menuloq/core/global/app_toast.dart';
 import 'package:menuloq/core/utils/loader.dart';
 import 'package:menuloq/features/business_setting/domain/intities/business_settings_entity.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/business_profile_card.dart';
@@ -22,79 +23,91 @@ class BusinessSettingsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isTablet = constraints.maxWidth >= _tabletBreakpoint;
+    return BlocListener<BusinessSettingsBloc, BusinessSettingsState>(
+      listenWhen: (previous, current) {
+        return previous.status != current.status ||
+            previous.message != current.message;
+      },
+      listener: (context, state) {
+        if (state.status == BusinessSettingsStatus.failure &&
+            state.message != null) {
+          AppToast.error(context, message: state.message!);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDark ? AppColors.darkBackground : AppColors.background,
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isTablet = constraints.maxWidth >= _tabletBreakpoint;
 
-            return Column(
-              children: [
-                const _BusinessSettingsHeader(),
-                const _SettingsTabBar(),
-                Expanded(
-                  child: BlocBuilder<BusinessSettingsBloc, BusinessSettingsState>(
-                    buildWhen: (previous, current) =>
-                        previous.status != current.status ||
-                        previous.settings != current.settings,
-                    builder: (context, state) {
-                      if (state.isLoading && !state.hasSettings) {
-                        return const Center(child: Loader());
-                      }
+              return Column(
+                children: [
+                  const _BusinessSettingsHeader(),
+                  const _SettingsTabBar(),
+                  Expanded(
+                    child: BlocBuilder<BusinessSettingsBloc, BusinessSettingsState>(
+                      buildWhen: (previous, current) =>
+                          previous.status != current.status ||
+                          previous.settings != current.settings,
+                      builder: (context, state) {
+                        if (state.isLoading && !state.hasSettings) {
+                          return const Center(child: Loader());
+                        }
 
-                      if (state.status == BusinessSettingsStatus.failure &&
-                          !state.hasSettings) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  state.message ??
-                                      'Failed to load business settings.',
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 14),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    context.read<BusinessSettingsBloc>().add(
-                                      const BusinessSettingsRefreshRequested(),
-                                    );
-                                  },
-                                  child: const Text('Try again'),
-                                ),
-                              ],
+                        if (state.status == BusinessSettingsStatus.failure &&
+                            !state.hasSettings) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    state.message ??
+                                        'Failed to load business settings.',
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 14),
+                                  ElevatedButton(
+                                    onPressed: () {
+                                      context.read<BusinessSettingsBloc>().add(
+                                        const BusinessSettingsRefreshRequested(),
+                                      );
+                                    },
+                                    child: const Text('Try again'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        return SingleChildScrollView(
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          padding: EdgeInsets.fromLTRB(
+                            isTablet ? 32 : 12,
+                            22,
+                            isTablet ? 32 : 12,
+                            28,
+                          ),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                maxWidth: isTablet ? 900 : 430,
+                              ),
+                              child: const _SettingsTabContent(),
                             ),
                           ),
                         );
-                      }
-
-                      return SingleChildScrollView(
-                        keyboardDismissBehavior:
-                            ScrollViewKeyboardDismissBehavior.onDrag,
-                        padding: EdgeInsets.fromLTRB(
-                          isTablet ? 32 : 12,
-                          22,
-                          isTablet ? 32 : 12,
-                          28,
-                        ),
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: isTablet ? 900 : 430,
-                            ),
-                            child: const _SettingsTabContent(),
-                          ),
-                        ),
-                      );
-                    },
+                      },
+                    ),
                   ),
-                ),
-              ],
-            );
-          },
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -152,13 +165,7 @@ class _BusinessSettingsHeaderState extends State<_BusinessSettingsHeader> {
 
       setState(() => _isLoggingOut = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Logout failed. Please try again.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.danger,
-        ),
-      );
+      AppToast.error(context, message: 'Logout failed. Please try again.');
     }
   }
 

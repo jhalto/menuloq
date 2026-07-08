@@ -7,6 +7,8 @@ abstract class AuthRepository {
     required String ownerName,
     required String email,
     required String mobileNumber,
+    required String businessAddress,
+    required bool termsAccepted,
     required String password,
     required String passwordConfirmation,
   });

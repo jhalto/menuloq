@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/core/error/app_exception.dart';
 import 'package:menuloq/features/auth/domain/usecases/get_otp_use_case.dart';
 import 'package:menuloq/features/auth/domain/usecases/verify_otp_use_case.dart';
 
@@ -135,11 +136,18 @@ class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
           message: 'Email verified successfully.',
         ),
       );
-    } catch (e) {
+    } on AppException catch (e) {
       emit(
         state.copyWith(
           status: VerifyEmailStatus.failure,
-          message: e.toString(),
+          message: e.message,
+        ),
+      );
+    } catch (_) {
+      emit(
+        state.copyWith(
+          status: VerifyEmailStatus.failure,
+          message: 'Something went wrong. Please try again.',
         ),
       );
     }
@@ -171,11 +179,18 @@ class VerifyEmailBloc extends Bloc<VerifyEmailEvent, VerifyEmailState> {
       );
 
       _startTimer();
-    } catch (e) {
+    } on AppException catch (e) {
       emit(
         state.copyWith(
           status: VerifyEmailStatus.failure,
-          message: e.toString(),
+          message: e.message,
+        ),
+      );
+    } catch (_) {
+      emit(
+        state.copyWith(
+          status: VerifyEmailStatus.failure,
+          message: 'Something went wrong. Please try again.',
         ),
       );
     }

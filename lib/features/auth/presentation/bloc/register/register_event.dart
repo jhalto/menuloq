@@ -9,6 +9,7 @@ class RegisterBusinessStepSubmitted extends RegisterEvent {
     required this.ownerName,
     required this.email,
     required this.mobileNumber,
+    required this.businessAddress,
   });
 
   final String businessName;
@@ -16,6 +17,7 @@ class RegisterBusinessStepSubmitted extends RegisterEvent {
   final String ownerName;
   final String email;
   final String mobileNumber;
+  final String businessAddress;
 }
 
 class RegisterBackToBusinessRequested extends RegisterEvent {
@@ -33,6 +35,8 @@ class RegisterSubmitted extends RegisterEvent {
     required this.ownerName,
     required this.email,
     required this.mobileNumber,
+    required this.businessAddress,
+    required this.termsAccepted,
     required this.password,
     required this.passwordConfirmation,
   });
@@ -42,6 +46,8 @@ class RegisterSubmitted extends RegisterEvent {
   final String ownerName;
   final String email;
   final String mobileNumber;
+  final String businessAddress;
+  final bool termsAccepted;
   final String password;
   final String passwordConfirmation;
 }

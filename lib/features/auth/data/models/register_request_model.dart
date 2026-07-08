@@ -5,6 +5,8 @@ class RegisterRequestModel {
     required this.ownerName,
     required this.email,
     required this.mobileNumber,
+    required this.businessAddress,
+    required this.termsAccepted,
     required this.password,
     required this.passwordConfirmation,
   });
@@ -14,6 +16,8 @@ class RegisterRequestModel {
   final String ownerName;
   final String email;
   final String mobileNumber;
+  final String businessAddress;
+  final bool termsAccepted;
   final String password;
   final String passwordConfirmation;
 
@@ -24,6 +28,8 @@ class RegisterRequestModel {
       'owner_name': ownerName,
       'email': email,
       'mobile_number': mobileNumber,
+      'business_address': businessAddress,
+      'terms_accepted': termsAccepted,
       'password': password,
       'password_confirmation': passwordConfirmation,
     };

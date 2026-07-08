@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
+import 'package:menuloq/core/global/app_toast.dart';
 import 'package:menuloq/features/auth/domain/enums/verify_email_type.dart';
 
 import '../../../../../config/theme/app_colors.dart';
@@ -9,7 +10,6 @@ import '../../bloc/forgot_password/forgot_password_event.dart';
 import '../../bloc/forgot_password/forgot_password_state.dart';
 import '../input_label.dart';
 import '../loading_button_content.dart';
-import '../message_box.dart';
 import 'forgot_password_info_row.dart';
 
 class ForgotPasswordContent extends StatefulWidget {
@@ -51,7 +51,16 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ForgotPasswordBloc, ForgotPasswordState>(
+      listenWhen: (previous, current) {
+        return previous.status != current.status ||
+            previous.message != current.message;
+      },
       listener: (context, state) {
+        if (state.status == ForgotPasswordStatus.failure &&
+            state.message != null) {
+          AppToast.error(context, message: state.message!);
+        }
+
         if (state.status == ForgotPasswordStatus.success) {
           Navigator.pushReplacementNamed(
             context,
@@ -156,11 +165,6 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
                 ),
               ),
 
-              if (state.message != null) ...[
-                const SizedBox(height: 16),
-                _ForgotPasswordMessage(state: state),
-              ],
-
               const SizedBox(height: 46),
 
               const ForgotPasswordInfoRow(
@@ -213,52 +217,6 @@ class _ForgotPasswordContentState extends State<ForgotPasswordContent> {
     }
 
     return null;
-  }
-}
-
-class _ForgotPasswordMessage extends StatelessWidget {
-  const _ForgotPasswordMessage({required this.state});
-
-  final ForgotPasswordState state;
-
-  @override
-  Widget build(BuildContext context) {
-    switch (state.status) {
-      case ForgotPasswordStatus.success:
-        return MessageBox(
-          icon: Icons.check_circle_rounded,
-          text: state.message ?? 'A 4-digit verification code has been sent.',
-          backgroundColor: AppColors.successLight,
-          borderColor: AppColors.success,
-          iconColor: AppColors.success,
-          textColor: AppColors.textPrimary,
-          actionText: 'Go to Reset Password',
-          actionColor: AppColors.accent,
-          onActionTap: () {
-            if (state.email.isNotEmpty) {
-              Navigator.pushNamed(
-                context,
-                Routes.resetPassword,
-                arguments: state.email,
-              );
-            }
-          },
-        );
-
-      case ForgotPasswordStatus.failure:
-        return MessageBox(
-          icon: Icons.error_rounded,
-          text: state.message ?? 'Could not send OTP. Please try again.',
-          backgroundColor: AppColors.dangerLight,
-          borderColor: AppColors.danger,
-          iconColor: AppColors.danger,
-          textColor: AppColors.danger,
-        );
-
-      case ForgotPasswordStatus.initial:
-      case ForgotPasswordStatus.loading:
-        return const SizedBox.shrink();
-    }
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
+import 'package:menuloq/core/global/app_toast.dart';
 
 import '../../../../../config/theme/app_colors.dart';
 import '../../bloc/reset_password/reset_password_bloc.dart';
@@ -8,7 +9,6 @@ import '../../bloc/reset_password/reset_password_event.dart';
 import '../../bloc/reset_password/reset_password_state.dart';
 import '../input_label.dart';
 import '../loading_button_content.dart';
-import '../message_box.dart';
 
 class ResetPasswordContent extends StatefulWidget {
   const ResetPasswordContent({
@@ -32,14 +32,28 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
 
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _newPasswordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
 
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
 
   @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _newPasswordFocusNode.requestFocus();
+    });
+  }
+
+  @override
   void dispose() {
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
+    _newPasswordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -61,13 +75,22 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ResetPasswordBloc, ResetPasswordState>(
+      listenWhen: (previous, current) {
+        return previous.status != current.status ||
+            previous.message != current.message;
+      },
       listener: (context, state) {
+        if ((state.status == ResetPasswordStatus.failure ||
+                state.status == ResetPasswordStatus.expired ||
+                state.status == ResetPasswordStatus.passwordMismatch) &&
+            state.message != null) {
+          AppToast.error(context, message: state.message!);
+        }
+
         if (state.status == ResetPasswordStatus.success) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Password changed successfully.'),
-              backgroundColor: Colors.green,
-            ),
+          AppToast.success(
+            context,
+            message: 'Password changed successfully.',
           );
 
           Navigator.pushNamedAndRemoveUntil(
@@ -147,6 +170,7 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
 
               TextFormField(
                 controller: _newPasswordController,
+                focusNode: _newPasswordFocusNode,
                 enabled: !isLoading,
                 obscureText: _obscureNewPassword,
                 textInputAction: TextInputAction.next,
@@ -170,6 +194,9 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
                   ),
                 ),
                 validator: _newPasswordValidator,
+                onFieldSubmitted: (_) {
+                  _confirmPasswordFocusNode.requestFocus();
+                },
               ),
 
               const SizedBox(height: 18),
@@ -179,6 +206,7 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
 
               TextFormField(
                 controller: _confirmPasswordController,
+                focusNode: _confirmPasswordFocusNode,
                 enabled: !isLoading,
                 obscureText: _obscureConfirmPassword,
                 textInputAction: TextInputAction.done,
@@ -234,20 +262,13 @@ class _ResetPasswordContentState extends State<ResetPasswordContent> {
                 child: ElevatedButton(
                   onPressed: isLoading ? null : _submit,
                   child: isLoading
-                      ? const LoadingButtonContent()
-                      : const Text('Change password'),
+                      ? const LoadingButtonContent(
+                          label: 'Resetting password...',
+                        )
+                      : const Text('Reset password'),
                 ),
               ),
 
-              if (isLoading) ...[
-                const SizedBox(height: 12),
-                const _ResettingBox(),
-              ],
-
-              if (state.message != null) ...[
-                const SizedBox(height: 18),
-                _ResetPasswordStatusMessage(state: state),
-              ],
             ],
           ),
         );
@@ -348,79 +369,6 @@ class _RuleChip extends StatelessWidget {
             style: theme.textTheme.bodySmall?.copyWith(
               color: textColor,
               fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ResetPasswordStatusMessage extends StatelessWidget {
-  const _ResetPasswordStatusMessage({required this.state});
-
-  final ResetPasswordState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    if (state.status == ResetPasswordStatus.success) {
-      return MessageBox(
-        icon: Icons.check_circle_rounded,
-        text: state.message ?? 'Password changed successfully.',
-        backgroundColor: isDark
-            ? const Color(0xFF12351F)
-            : AppColors.successLight,
-        borderColor: AppColors.success,
-        iconColor: AppColors.success,
-        textColor: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
-      );
-    }
-
-    return MessageBox(
-      icon: Icons.error_rounded,
-      text: state.message ?? 'Could not change password. Please try again.',
-      backgroundColor: isDark ? const Color(0xFF3A1515) : AppColors.dangerLight,
-      borderColor: AppColors.danger,
-      iconColor: AppColors.danger,
-      textColor: isDark ? AppColors.darkTextPrimary : AppColors.danger,
-    );
-  }
-}
-
-class _ResettingBox extends StatelessWidget {
-  const _ResettingBox();
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      height: 56,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF173D22) : AppColors.accentLight,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.accent),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.4,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Changing password...',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppColors.accent,
-              fontWeight: FontWeight.w900,
             ),
           ),
         ],

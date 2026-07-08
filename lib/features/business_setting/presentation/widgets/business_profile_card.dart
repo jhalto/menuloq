@@ -2,6 +2,7 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/theme/app_colors.dart';
+import 'package:menuloq/core/global/app_toast.dart';
 import 'package:menuloq/features/business_setting/domain/intities/business_settings_entity.dart';
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_bloc.dart';
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_state.dart';
@@ -91,12 +92,7 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
       isoCode: _countryIsoCode,
     );
     // TODO: Later call update business settings API here.
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Update API is not connected yet.'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.error(context, message: 'Update API is not connected yet.');
   }
 
   @override

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/theme/app_colors.dart';
+import 'package:menuloq/core/global/app_toast.dart';
 import 'package:menuloq/core/helper/phone_number_helper.dart';
 
 import 'package:menuloq/features/account/domain/entities/my_account_entitry.dart';
@@ -118,18 +119,8 @@ class _MyAccountViewState extends State<MyAccountView> {
           });
         }
 
-        if (state.errorMessage != null &&
-            state.fieldErrors.isEmpty &&
-            state.hasAccount) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage!),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: AppColors.danger,
-              ),
-            );
+        if (state.errorMessage != null && state.fieldErrors.isEmpty) {
+          AppToast.error(context, message: state.errorMessage!);
         }
       },
       buildWhen: (previous, current) =>

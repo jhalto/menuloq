@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
+import 'package:menuloq/core/global/app_toast.dart';
 
 import '../../../../../config/theme/app_colors.dart';
 import '../../bloc/login/auth_bloc.dart';
 import '../../bloc/login/auth_event.dart';
 import '../../bloc/login/auth_state.dart';
-import '../auth_state_message.dart';
 import '../brand_logo.dart';
 import '../divider_text.dart';
 import '../input_label.dart';
@@ -61,6 +61,12 @@ class _LoginContentState extends State<LoginContent> {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
+        if ((state.status == AuthStatus.failure ||
+                state.status == AuthStatus.inactive) &&
+            state.message != null) {
+          AppToast.error(context, message: state.message!);
+        }
+
         if (state.status == AuthStatus.success) {
           Navigator.pushReplacementNamed(context, Routes.dashboard);
         }
@@ -169,8 +175,6 @@ class _LoginContentState extends State<LoginContent> {
                       : const Text('Sign in'),
                 ),
               ),
-              const SizedBox(height: 14),
-              AuthStateMessage(state: state),
               const SizedBox(height: 16),
               const DividerText(text: 'New to MenuLoq?'),
               const SizedBox(height: 24),

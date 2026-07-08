@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
+import 'package:menuloq/core/global/app_toast.dart';
 import 'package:menuloq/features/auth/domain/enums/verify_email_type.dart';
 import 'package:menuloq/features/auth/presentation/widgets/verifly_email/otp_code_field.dart';
 
@@ -151,17 +152,31 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
 
   String _otpCode = '';
 
+  void _changeEmail() {
+    final navigator = Navigator.of(context);
+
+    if (widget.type == VerifyEmailType.forgotPassword) {
+      navigator.pushReplacementNamed(Routes.forgotPassword);
+      return;
+    }
+
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+
+    navigator.pushReplacementNamed(Routes.register);
+  }
+
   void _submit() {
     FocusScope.of(context).unfocus();
 
     final otp = _otpCode.trim();
 
     if (otp.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter the 4-digit OTP code.'),
-          backgroundColor: AppColors.danger,
-        ),
+      AppToast.error(
+        context,
+        message: 'Please enter the 4-digit OTP code.',
       );
       return;
     }
@@ -172,7 +187,17 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<VerifyEmailBloc, VerifyEmailState>(
+      listenWhen: (previous, current) {
+        return previous.status != current.status ||
+            previous.message != current.message;
+      },
       listener: (context, state) {
+        if ((state.status == VerifyEmailStatus.failure ||
+                state.status == VerifyEmailStatus.expired) &&
+            state.message != null) {
+          AppToast.error(context, message: state.message!);
+        }
+
         if (state.status == VerifyEmailStatus.success) {
           if (widget.type == VerifyEmailType.forgotPassword) {
             Navigator.pushReplacementNamed(
@@ -202,7 +227,7 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
-                  onPressed: isBusy ? null : () => Navigator.pop(context),
+                  onPressed: isBusy ? null : _changeEmail,
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
               ),
@@ -241,7 +266,7 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
             ),
             const SizedBox(height: 8),
             TextButton(
-              onPressed: isBusy ? null : () => Navigator.pop(context),
+              onPressed: isBusy ? null : _changeEmail,
               child: const Text('Change email'),
             ),
             const SizedBox(height: 26),
@@ -250,27 +275,8 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
               enabled: !isBusy && !state.isExpired,
               onCompleted: (code) {
                 _otpCode = code;
+                _submit();
               },
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Auto-focus, numbers only, and paste entire code supported.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: isBusy || state.isExpired
-                  ? null
-                  : () async {
-                      await _otpKey.currentState?.pasteFromClipboard();
-                      _otpCode = _otpKey.currentState?.code ?? '';
-                    },
-              icon: const Icon(Icons.content_paste_rounded),
-              label: const Text('Paste code'),
             ),
             const SizedBox(height: 24),
             Text.rich(
@@ -325,7 +331,8 @@ class _VerifyEmailContentState extends State<VerifyEmailContent> {
                 );
               },
             ),
-            if (state.message != null) ...[
+            if (state.status == VerifyEmailStatus.resendSuccess &&
+                state.message != null) ...[
               const SizedBox(height: 26),
               _StatusMessage(state: state),
             ],
@@ -444,57 +451,14 @@ class _StatusMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    switch (state.status) {
-      case VerifyEmailStatus.failure:
-        return MessageBox(
-          icon: Icons.error_rounded,
-          text: state.message ?? 'The OTP code is invalid.',
-          backgroundColor: AppColors.dangerLight,
-          borderColor: AppColors.danger,
-          iconColor: AppColors.danger,
-          textColor: AppColors.danger,
-        );
-
-      case VerifyEmailStatus.expired:
-        return MessageBox(
-          icon: Icons.timer_rounded,
-          text: state.message ?? 'OTP has expired. Please request a new OTP.',
-          backgroundColor: AppColors.warningLight,
-          borderColor: AppColors.warning,
-          iconColor: AppColors.warning,
-          textColor: AppColors.textPrimary,
-        );
-
-      case VerifyEmailStatus.success:
-        return MessageBox(
-          icon: Icons.check_circle_rounded,
-          text: state.message ?? 'Email verified successfully.',
-          actionText: 'Continue to sign in',
-          backgroundColor: AppColors.successLight,
-          borderColor: AppColors.success,
-          iconColor: AppColors.success,
-          textColor: AppColors.textPrimary,
-          actionColor: AppColors.accent,
-          onActionTap: () {
-            // Navigator.pushReplacementNamed(context, Routes.login);
-          },
-        );
-
-      case VerifyEmailStatus.resendSuccess:
-        return MessageBox(
-          icon: Icons.check_circle_rounded,
-          text: state.message ?? 'A new OTP code has been sent.',
-          backgroundColor: AppColors.successLight,
-          borderColor: AppColors.success,
-          iconColor: AppColors.success,
-          textColor: AppColors.textPrimary,
-        );
-
-      case VerifyEmailStatus.initial:
-      case VerifyEmailStatus.loading:
-      case VerifyEmailStatus.resendLoading:
-        return const SizedBox.shrink();
-    }
+    return MessageBox(
+      icon: Icons.check_circle_rounded,
+      text: state.message ?? 'A new OTP code has been sent.',
+      backgroundColor: AppColors.successLight,
+      borderColor: AppColors.success,
+      iconColor: AppColors.success,
+      textColor: AppColors.textPrimary,
+    );
   }
 }
 
