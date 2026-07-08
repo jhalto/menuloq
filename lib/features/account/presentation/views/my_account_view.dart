@@ -2,12 +2,12 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/config/theme/app_colors.dart';
 import 'package:menuloq/core/helper/phone_number_helper.dart';
 
 import 'package:menuloq/features/account/domain/entities/my_account_entitry.dart';
 import 'package:menuloq/features/account/domain/params/update_my_account_params.dart';
 
-import '../../../config/theme/app_colors.dart';
 
 import '../bloc/my_account_bloc.dart';
 import '../bloc/my_account_event.dart';

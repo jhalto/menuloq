@@ -64,7 +64,7 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
     UpdateMyAccountParams params,
   ) async {
     try {
-      final response = await _dio.put(
+      final response = await _dio.post(
         ApiEndpoints.myAccount,
         data: params.toJson(),
       );
