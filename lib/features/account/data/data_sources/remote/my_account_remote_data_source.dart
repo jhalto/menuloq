@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:menuloq/core/error/app_exception.dart';
 import 'package:menuloq/core/network/api_endpoints.dart';
 import 'package:menuloq/core/network/handle_error.dart';
 import 'package:menuloq/features/account/data/models/my_account_model.dart';
 import 'package:menuloq/features/account/domain/entities/my_account_validation_exception.dart';
+import 'package:menuloq/features/account/domain/params/change_password_params.dart';
 import 'package:menuloq/features/account/domain/params/update_my_account_params.dart';
 
 abstract class MyAccountRemoteDataSource {
@@ -12,6 +14,8 @@ abstract class MyAccountRemoteDataSource {
   Future<MyAccountModel?> updateMyAccount(
     UpdateMyAccountParams params,
   );
+
+  Future<String> changePassword(ChangePasswordParams params);
 }
 
 class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
@@ -69,6 +73,11 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
         data: params.toJson(),
       );
 
+      debugPrint('========== UPDATE ACCOUNT RESPONSE ==========');
+      debugPrint('Status Code: ${response.statusCode}');
+      debugPrint('Response Data: ${response.data}');
+      debugPrint('=============================================');
+
       final responseData = response.data;
 
       if (responseData is Map) {
@@ -88,6 +97,11 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
 
       return null;
     } on DioException catch (error) {
+      debugPrint('========== UPDATE ACCOUNT ERROR RESPONSE ==========');
+      debugPrint('Status Code: ${error.response?.statusCode}');
+      debugPrint('Response Data: ${error.response?.data}');
+      debugPrint('===================================================');
+
       if (error.response?.statusCode == 422) {
         final responseData = error.response?.data;
 
@@ -107,6 +121,40 @@ class MyAccountRemoteDataSourceImpl implements MyAccountRemoteDataSource {
     } catch (_) {
       throw const AppException(
         message: 'Something went wrong while updating account details.',
+      );
+    }
+  }
+
+  @override
+  Future<String> changePassword(ChangePasswordParams params) async {
+    try {
+      final response = await _dio.post(
+        ApiEndpoints.changePassword,
+        data: params.toJson(),
+      );
+
+      final responseData = response.data;
+
+      if (responseData is! Map) {
+        throw const AppException(message: 'Invalid change password response.');
+      }
+
+      final json = Map<String, dynamic>.from(responseData);
+      final message =
+          json['message']?.toString() ?? 'Password changed successfully.';
+
+      if (json['success'] == false) {
+        throw AppException(message: message);
+      }
+
+      return message;
+    } on DioException catch (error) {
+      throw AppException(message: handleDioError(error));
+    } on AppException {
+      rethrow;
+    } catch (_) {
+      throw const AppException(
+        message: 'Something went wrong while changing your password.',
       );
     }
   }

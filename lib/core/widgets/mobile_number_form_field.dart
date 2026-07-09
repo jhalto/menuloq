@@ -323,6 +323,9 @@ class _MobileNumberFormFieldState extends State<MobileNumberFormField> {
             controller: widget.controller,
             focusNode: widget.focusNode,
             enabled: widget.enabled,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: widget.enabled ? textColor : iconColor,
+            ),
             keyboardType: TextInputType.phone,
             textInputAction: widget.textInputAction,
             inputFormatters: [

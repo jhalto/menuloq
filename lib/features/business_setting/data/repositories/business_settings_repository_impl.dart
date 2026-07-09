@@ -1,5 +1,6 @@
 
 import 'package:menuloq/features/business_setting/domain/intities/business_settings_entity.dart';
+import 'package:menuloq/features/business_setting/domain/params/update_business_settings_params.dart';
 import 'package:menuloq/features/business_setting/domain/repository/business_settings_repository.dart';
 
 import '../data_sources/remote/business_settings_remote_data_source.dart';
@@ -34,5 +35,21 @@ class BusinessSettingsRepositoryImpl implements BusinessSettingsRepository {
     _runningRequest = request;
 
     return request;
+  }
+
+  @override
+  Future<BusinessSettingsEntity> updateBusinessSettings(
+    UpdateBusinessSettingsParams params,
+  ) async {
+    final updatedSettings = await _remoteDataSource.updateBusinessSettings(
+      params,
+    );
+
+    if (updatedSettings != null) {
+      _cachedSettings = updatedSettings;
+      return updatedSettings;
+    }
+
+    return getBusinessSettings(forceRefresh: true);
   }
 }

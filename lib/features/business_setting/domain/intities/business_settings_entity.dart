@@ -21,6 +21,7 @@ class BusinessEntity {
     required this.ownerName,
     required this.businessEmail,
     required this.businessMobileNumber,
+    required this.mobileDialCode,
     required this.country,
     required this.countryLocked,
     required this.timezone,
@@ -41,6 +42,7 @@ class BusinessEntity {
   final String ownerName;
   final String businessEmail;
   final String businessMobileNumber;
+  final String? mobileDialCode;
   final String country;
   final bool countryLocked;
   final String timezone;

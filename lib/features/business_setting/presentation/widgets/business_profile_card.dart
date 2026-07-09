@@ -2,9 +2,11 @@ import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/theme/app_colors.dart';
-import 'package:menuloq/core/global/app_toast.dart';
+import 'package:menuloq/core/widgets/mobile_number_form_field.dart';
 import 'package:menuloq/features/business_setting/domain/intities/business_settings_entity.dart';
+import 'package:menuloq/features/business_setting/domain/params/update_business_settings_params.dart';
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_bloc.dart';
+import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_event.dart';
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_state.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/business_setting_text_field.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/field_label.dart';
@@ -87,12 +89,25 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
     FocusScope.of(context).unfocus();
 
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final mobileNumber = PhoneNumberHelper.toInternationalNumber(
-      value: _mobileController.text.trim(),
-      isoCode: _countryIsoCode,
+
+    final settings = widget.settings;
+    final mobileCountry = MobileNumberFormField.countryFromCode(
+      _countryIsoCode,
     );
-    // TODO: Later call update business settings API here.
-    AppToast.error(context, message: 'Update API is not connected yet.');
+
+    context.read<BusinessSettingsBloc>().add(
+      BusinessSettingsSaveRequested(
+        UpdateBusinessSettingsParams.fromSettings(
+          settings,
+          businessName: _businessNameController.text.trim(),
+          ownerName: _ownerNameController.text.trim(),
+          businessEmail: _emailController.text.trim(),
+          businessMobileNumber: _mobileController.text.trim(),
+          mobileDialCode: '+${mobileCountry.phoneCode}',
+          businessAddress: _addressController.text.trim(),
+        ),
+      ),
+    );
   }
 
   @override
@@ -516,6 +531,7 @@ class _SaveButton extends StatelessWidget {
             elevation: 0,
             backgroundColor: Colors.transparent,
             disabledBackgroundColor: Colors.transparent,
+            disabledForegroundColor: AppColors.white,
             shadowColor: Colors.transparent,
             foregroundColor: AppColors.white,
             textStyle: const TextStyle(

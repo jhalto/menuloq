@@ -36,6 +36,7 @@ class BusinessModel extends BusinessEntity {
     required super.ownerName,
     required super.businessEmail,
     required super.businessMobileNumber,
+    required super.mobileDialCode,
     required super.country,
     required super.countryLocked,
     required super.timezone,
@@ -58,15 +59,16 @@ class BusinessModel extends BusinessEntity {
       ownerName: json['owner_name']?.toString() ?? '',
       businessEmail: json['business_email']?.toString() ?? '',
       businessMobileNumber: json['business_mobile_number']?.toString() ?? '',
+      mobileDialCode: json['mobile_dial_code']?.toString(),
       country: json['country']?.toString() ?? '',
-      countryLocked: json['country_locked'] == true,
+      countryLocked: _toBool(json['country_locked']),
       timezone: json['timezone']?.toString() ?? '',
       currency: json['currency']?.toString() ?? '',
-      currencyLocked: json['currency_locked'] == true,
+      currencyLocked: _toBool(json['currency_locked']),
       websiteDefaultLanguage: json['website_default_language']?.toString() ?? '',
       businessAddress: json['business_address']?.toString(),
       deliveryOptions: _toStringList(json['delivery_options']),
-      isAvailable: json['is_available'] == true,
+      isAvailable: _toBool(json['is_available']),
     );
   }
 }
@@ -159,4 +161,12 @@ Map<String, LanguageOptionModel> _toLanguageMap(dynamic value) {
       ),
     ),
   );
+}
+
+bool _toBool(dynamic value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+
+  final normalized = value?.toString().trim().toLowerCase();
+  return normalized == '1' || normalized == 'true';
 }

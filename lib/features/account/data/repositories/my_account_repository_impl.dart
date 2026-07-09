@@ -1,5 +1,6 @@
 import 'package:menuloq/features/account/data/data_sources/remote/my_account_remote_data_source.dart';
 import 'package:menuloq/features/account/domain/entities/my_account_entitry.dart';
+import 'package:menuloq/features/account/domain/params/change_password_params.dart';
 import 'package:menuloq/features/account/domain/params/update_my_account_params.dart';
 import 'package:menuloq/features/account/domain/repositories/my_account_repository.dart';
 
@@ -43,5 +44,10 @@ class MyAccountRepositoryImpl implements MyAccountRepository {
     }
 
     return getMyAccount(forceRefresh: true);
+  }
+
+  @override
+  Future<String> changePassword(ChangePasswordParams params) {
+    return _remoteDataSource.changePassword(params);
   }
 }

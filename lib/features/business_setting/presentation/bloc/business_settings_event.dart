@@ -1,4 +1,5 @@
 import 'business_settings_state.dart';
+import 'package:menuloq/features/business_setting/domain/params/update_business_settings_params.dart';
 
 abstract class BusinessSettingsEvent {
   const BusinessSettingsEvent();
@@ -16,4 +17,10 @@ class BusinessSettingsTabChanged extends BusinessSettingsEvent {
   const BusinessSettingsTabChanged(this.tab);
 
   final BusinessSettingsTab tab;
+}
+
+class BusinessSettingsSaveRequested extends BusinessSettingsEvent {
+  const BusinessSettingsSaveRequested(this.params);
+
+  final UpdateBusinessSettingsParams params;
 }

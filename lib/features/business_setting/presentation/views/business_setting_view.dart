@@ -5,6 +5,7 @@ import 'package:menuloq/core/di/dependency_factory.dart';
 import 'package:menuloq/core/global/app_toast.dart';
 import 'package:menuloq/core/utils/loader.dart';
 import 'package:menuloq/features/business_setting/domain/intities/business_settings_entity.dart';
+import 'package:menuloq/features/business_setting/domain/params/update_business_settings_params.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/business_profile_card.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/business_setting_text_field.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/field_label.dart';
@@ -32,6 +33,11 @@ class BusinessSettingsView extends StatelessWidget {
         if (state.status == BusinessSettingsStatus.failure &&
             state.message != null) {
           AppToast.error(context, message: state.message!);
+        }
+
+        if (state.status == BusinessSettingsStatus.success &&
+            state.message != null) {
+          AppToast.success(context, message: state.message!);
         }
       },
       child: Scaffold(
@@ -428,117 +434,310 @@ class _SettingsTabContent extends StatelessWidget {
   }
 }
 
-class _OrderDeliverySettingsCard extends StatelessWidget {
+class _OrderDeliverySettingsCard extends StatefulWidget {
   const _OrderDeliverySettingsCard({required this.settings});
 
   final BusinessSettingsEntity settings;
 
   @override
+  State<_OrderDeliverySettingsCard> createState() =>
+      _OrderDeliverySettingsCardState();
+}
+
+class _OrderDeliverySettingsCardState
+    extends State<_OrderDeliverySettingsCard> {
+  final _formKey = GlobalKey<FormState>();
+  final _deliveryChargeController = TextEditingController();
+  final _instructionsController = TextEditingController();
+  late Set<String> _selectedOptions;
+
+  @override
+  void initState() {
+    super.initState();
+    _fillFromSettings();
+  }
+
+  @override
+  void didUpdateWidget(covariant _OrderDeliverySettingsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings != widget.settings) _fillFromSettings();
+  }
+
+  void _fillFromSettings() {
+    _deliveryChargeController.text =
+        widget.settings.deliverySetting.deliveryCharge.toStringAsFixed(2);
+    _instructionsController.text =
+        widget.settings.deliverySetting.instructions ?? '';
+    _selectedOptions = widget.settings.business.deliveryOptions.toSet();
+  }
+
+  @override
+  void dispose() {
+    _deliveryChargeController.dispose();
+    _instructionsController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    FocusScope.of(context).unfocus();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    context.read<BusinessSettingsBloc>().add(
+      BusinessSettingsSaveRequested(
+        UpdateBusinessSettingsParams.fromSettings(
+          widget.settings,
+          deliveryOptions: _selectedOptions.toList(),
+          deliveryCharge:
+              double.tryParse(_deliveryChargeController.text.trim()) ?? 0,
+          instructions: _instructionsController.text.trim(),
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final business = settings.business;
-    final deliverySetting = settings.deliverySetting;
-    final options = settings.options;
+    final isSaving = context.select(
+      (BusinessSettingsBloc bloc) => bloc.state.isSaving,
+    );
+    final options = widget.settings.options;
 
-    return _SettingsCard(
-      title: 'Order & Delivery',
-      children: [
-        _ReadOnlyField(
-          label: 'Delivery charge',
-          value: deliverySetting.deliveryCharge.toStringAsFixed(2),
-          icon: Icons.payments_outlined,
-        ),
-        const SizedBox(height: 20),
-        _ReadOnlyField(
-          label: 'Delivery instructions',
-          value: deliverySetting.instructions?.trim().isNotEmpty == true
-              ? deliverySetting.instructions!
-              : 'No instructions added',
-          icon: Icons.notes_rounded,
-        ),
-        const SizedBox(height: 22),
-        FieldLabel(text: 'Enabled order options'),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: options.deliveryOptions.map((option) {
-            final selected = business.deliveryOptions.contains(option);
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          _SettingsCard(
+            title: 'Order & Delivery',
+            children: [
+              const FieldLabel(text: 'Delivery charge'),
+              const SizedBox(height: 8),
+              BusinessSettingTextField(
+                controller: _deliveryChargeController,
+                enabled: !isSaving,
+                hintText: 'Enter delivery charge',
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  final amount = double.tryParse((value ?? '').trim());
+                  if (amount == null || amount < 0) {
+                    return 'Please enter a valid delivery charge.';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              const FieldLabel(text: 'Delivery instructions'),
+              const SizedBox(height: 8),
+              BusinessSettingTextField(
+                controller: _instructionsController,
+                enabled: !isSaving,
+                hintText: 'Add delivery instructions',
+                maxLines: 3,
+                textInputAction: TextInputAction.newline,
+              ),
+              const SizedBox(height: 22),
+              const FieldLabel(text: 'Enabled order options'),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: options.deliveryOptions.map((option) {
+                  final selected = _selectedOptions.contains(option);
 
-            return FilterChip(
-              selected: selected,
-              label: Text(option),
-              onSelected: (_) {},
-              selectedColor: AppColors.accent.withAlpha(45),
-              checkmarkColor: AppColors.accent,
-            );
-          }).toList(),
-        ),
-      ],
+                  return FilterChip(
+                    selected: selected,
+                    label: Text(option),
+                    onSelected: isSaving
+                        ? null
+                        : (value) {
+                            setState(() {
+                              value
+                                  ? _selectedOptions.add(option)
+                                  : _selectedOptions.remove(option);
+                            });
+                          },
+                    selectedColor: AppColors.accent.withAlpha(45),
+                    checkmarkColor: AppColors.accent,
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          _SettingsSaveButton(isSaving: isSaving, onPressed: _save),
+        ],
+      ),
     );
   }
 }
 
-class _RegionalSettingsCard extends StatelessWidget {
+class _RegionalSettingsCard extends StatefulWidget {
   const _RegionalSettingsCard({required this.settings});
 
   final BusinessSettingsEntity settings;
 
   @override
-  Widget build(BuildContext context) {
-    final business = settings.business;
-    final options = settings.options;
+  State<_RegionalSettingsCard> createState() => _RegionalSettingsCardState();
+}
 
-    return _SettingsCard(
-      title: 'Regional Settings',
+class _RegionalSettingsCardState extends State<_RegionalSettingsCard> {
+  late String _country;
+  late String _currency;
+  late String _timezone;
+  late String _language;
+
+  @override
+  void initState() {
+    super.initState();
+    _fillFromSettings();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RegionalSettingsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings != widget.settings) _fillFromSettings();
+  }
+
+  void _fillFromSettings() {
+    final business = widget.settings.business;
+    _country = business.country;
+    _currency = business.currency;
+    _timezone = business.timezone;
+    _language = business.websiteDefaultLanguage;
+  }
+
+  void _save() {
+    context.read<BusinessSettingsBloc>().add(
+      BusinessSettingsSaveRequested(
+        UpdateBusinessSettingsParams.fromSettings(
+          widget.settings,
+          country: _country,
+          currency: _currency,
+          timezone: _timezone,
+          websiteDefaultLanguage: _language,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final business = widget.settings.business;
+    final options = widget.settings.options;
+    final isSaving = context.select(
+      (BusinessSettingsBloc bloc) => bloc.state.isSaving,
+    );
+
+    return Column(
       children: [
-        _AppDropdownField(
-          label: 'Country',
-          value: business.country,
-          items: options.countries,
-          enabled: !business.countryLocked,
-          locked: business.countryLocked,
-          onChanged: (_) {},
+        _SettingsCard(
+          title: 'Regional Settings',
+          children: [
+            _AppDropdownField(
+              label: 'Country',
+              value: _country,
+              items: options.countries,
+              enabled: !business.countryLocked && !isSaving,
+              locked: business.countryLocked,
+              onChanged: (value) {
+                if (value != null) setState(() => _country = value);
+              },
+            ),
+            const SizedBox(height: 20),
+            _AppDropdownField(
+              label: 'Currency',
+              value: _currency,
+              items: options.currencies,
+              enabled: !business.currencyLocked && !isSaving,
+              locked: business.currencyLocked,
+              onChanged: (value) {
+                if (value != null) setState(() => _currency = value);
+              },
+            ),
+            const SizedBox(height: 20),
+            _AppDropdownField(
+              label: 'Timezone',
+              value: _timezone,
+              items: options.timezones,
+              enabled: !isSaving,
+              onChanged: (value) {
+                if (value != null) setState(() => _timezone = value);
+              },
+            ),
+            const SizedBox(height: 20),
+            _LanguageDropdownField(
+              value: _language,
+              languages: options.languages,
+              enabled: !isSaving,
+              onChanged: (value) {
+                if (value != null) setState(() => _language = value);
+              },
+            ),
+          ],
         ),
-        const SizedBox(height: 20),
-        _AppDropdownField(
-          label: 'Currency',
-          value: business.currency,
-          items: options.currencies,
-          enabled: !business.currencyLocked,
-          locked: business.currencyLocked,
-          onChanged: (_) {},
-        ),
-        const SizedBox(height: 20),
-        _AppDropdownField(
-          label: 'Timezone',
-          value: business.timezone,
-          items: options.timezones,
-          enabled: true,
-          onChanged: (_) {},
-        ),
-        const SizedBox(height: 20),
-        _LanguageDropdownField(
-          value: business.websiteDefaultLanguage,
-          languages: options.languages,
-          onChanged: (_) {},
-        ),
+        const SizedBox(height: 22),
+        _SettingsSaveButton(isSaving: isSaving, onPressed: _save),
       ],
     );
   }
 }
 
-class _AvailabilitySettingsCard extends StatelessWidget {
+class _AvailabilitySettingsCard extends StatefulWidget {
   const _AvailabilitySettingsCard({required this.settings});
 
   final BusinessSettingsEntity settings;
 
   @override
-  Widget build(BuildContext context) {
-    final business = settings.business;
+  State<_AvailabilitySettingsCard> createState() =>
+      _AvailabilitySettingsCardState();
+}
 
-    return _AvailabilitySwitchCard(
-      isAvailable: business.isAvailable,
-      onChanged: (_) {},
+class _AvailabilitySettingsCardState
+    extends State<_AvailabilitySettingsCard> {
+  late bool _isAvailable;
+
+  @override
+  void initState() {
+    super.initState();
+    _isAvailable = widget.settings.business.isAvailable;
+  }
+
+  @override
+  void didUpdateWidget(covariant _AvailabilitySettingsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings != widget.settings) {
+      _isAvailable = widget.settings.business.isAvailable;
+    }
+  }
+
+  void _save() {
+    context.read<BusinessSettingsBloc>().add(
+      BusinessSettingsSaveRequested(
+        UpdateBusinessSettingsParams.fromSettings(
+          widget.settings,
+          isAvailable: _isAvailable,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSaving = context.select(
+      (BusinessSettingsBloc bloc) => bloc.state.isSaving,
+    );
+
+    return Column(
+      children: [
+        _AvailabilitySwitchCard(
+          isAvailable: _isAvailable,
+          onChanged: isSaving
+              ? (_) {}
+              : (value) => setState(() => _isAvailable = value),
+        ),
+        const SizedBox(height: 22),
+        _SettingsSaveButton(isSaving: isSaving, onPressed: _save),
+      ],
     );
   }
 }
@@ -663,6 +862,41 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
+class _SettingsSaveButton extends StatelessWidget {
+  const _SettingsSaveButton({
+    required this.isSaving,
+    required this.onPressed,
+  });
+
+  final bool isSaving;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton.icon(
+        onPressed: isSaving ? null : onPressed,
+        icon: isSaving
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.2,
+                  color: AppColors.white,
+                ),
+              )
+            : const Icon(Icons.save_outlined),
+        label: Text(isSaving ? 'Saving...' : 'Save changes'),
+        style: ElevatedButton.styleFrom(
+          disabledForegroundColor: AppColors.white,
+        ),
+      ),
+    );
+  }
+}
+
 class _AppDropdownField extends StatelessWidget {
   const _AppDropdownField({
     required this.label,
@@ -713,11 +947,13 @@ class _LanguageDropdownField extends StatelessWidget {
     required this.value,
     required this.languages,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final String value;
   final Map<String, LanguageOptionEntity> languages;
   final ValueChanged<String?> onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -731,7 +967,7 @@ class _LanguageDropdownField extends StatelessWidget {
         DropdownButtonFormField<String>(
           value: selectedValue,
           isExpanded: true,
-          onChanged: onChanged,
+          onChanged: enabled ? onChanged : null,
           items: languages.entries.map((entry) {
             final language = entry.value;
 
@@ -743,38 +979,6 @@ class _LanguageDropdownField extends StatelessWidget {
               ),
             );
           }).toList(),
-        ),
-      ],
-    );
-  }
-}
-
-class _ReadOnlyField extends StatelessWidget {
-  const _ReadOnlyField({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = TextEditingController(text: value);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FieldLabel(text: label),
-        const SizedBox(height: 8),
-        BusinessSettingTextField(
-          controller: controller,
-          enabled: false,
-          readOnly: true,
-          hintText: label,
-          suffixIcon: icon,
         ),
       ],
     );

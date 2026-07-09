@@ -3,8 +3,10 @@ import 'package:menuloq/core/network/dio_client.dart';
 import 'package:menuloq/features/account/data/data_sources/remote/my_account_remote_data_source.dart';
 import 'package:menuloq/features/account/data/repositories/my_account_repository_impl.dart';
 import 'package:menuloq/features/account/domain/repositories/my_account_repository.dart';
+import 'package:menuloq/features/account/domain/usecases/change_password_use_case.dart';
 import 'package:menuloq/features/account/domain/usecases/get_my_account_use_case.dart';
 import 'package:menuloq/features/account/domain/usecases/update_my_account_use_case.dart';
+import 'package:menuloq/features/account/presentation/bloc/change_password/change_password_bloc.dart';
 import 'package:menuloq/features/account/presentation/bloc/my_account_bloc.dart';
 import 'package:menuloq/features/auth/data/data_sources/local/auth_local_data_source.dart';
 import 'package:menuloq/features/auth/data/data_sources/remote/auth_remote_data_source.dart';
@@ -24,6 +26,7 @@ import 'package:menuloq/features/business_setting/data/data_sources/remote/busin
 import 'package:menuloq/features/business_setting/data/repositories/business_settings_repository_impl.dart';
 import 'package:menuloq/features/business_setting/domain/repository/business_settings_repository.dart';
 import 'package:menuloq/features/business_setting/domain/usecases/get_bussiness_settings_use_case.dart';
+import 'package:menuloq/features/business_setting/domain/usecases/update_business_settings_use_case.dart';
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_bloc.dart';
 
 /// Manual Dependency Injection
@@ -88,6 +91,8 @@ class DependencyFactory {
 
   late final UpdateMyAccountUseCase updateMyAccountUseCase =
       UpdateMyAccountUseCase(myAccountRepository);
+  late final ChangePasswordUseCase changePasswordUseCase =
+      ChangePasswordUseCase(myAccountRepository);
 
   // ──────────────────────────────────────────
   // Blocs
@@ -129,6 +134,10 @@ class DependencyFactory {
     );
   }
 
+  ChangePasswordBloc createChangePasswordBloc() {
+    return ChangePasswordBloc(changePasswordUseCase: changePasswordUseCase);
+  }
+
   // business settings
 
   late final BusinessSettingsRemoteDataSource businessSettingsRemoteDataSource =
@@ -139,10 +148,13 @@ class DependencyFactory {
 
   late final GetBusinessSettingsUseCase getBusinessSettingsUseCase =
       GetBusinessSettingsUseCase(businessSettingsRepository);
+  late final UpdateBusinessSettingsUseCase updateBusinessSettingsUseCase =
+      UpdateBusinessSettingsUseCase(businessSettingsRepository);
 
   BusinessSettingsBloc createBusinessSettingsBloc() {
     return BusinessSettingsBloc(
       getBusinessSettingsUseCase: getBusinessSettingsUseCase,
+      updateBusinessSettingsUseCase: updateBusinessSettingsUseCase,
     );
   }
 }

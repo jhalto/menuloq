@@ -1,14 +1,12 @@
-import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/config/theme/app_colors.dart';
 import 'package:menuloq/core/global/app_toast.dart';
 import 'package:menuloq/core/helper/phone_number_helper.dart';
-
+import 'package:menuloq/core/widgets/mobile_number_form_field.dart';
 import 'package:menuloq/features/account/domain/entities/my_account_entitry.dart';
 import 'package:menuloq/features/account/domain/params/update_my_account_params.dart';
-
 
 import '../bloc/my_account_bloc.dart';
 import '../bloc/my_account_event.dart';
@@ -59,18 +57,6 @@ class _MyAccountViewState extends State<MyAccountView> {
     _countryIsoCode = parsedPhone.isoCode;
   }
 
-  void _resetForm() {
-    final account = _loadedAccount;
-
-    if (account == null) return;
-
-    setState(() {
-      _fillForm(account);
-    });
-
-    FocusScope.of(context).unfocus();
-  }
-
   void _submit() {
     FocusScope.of(context).unfocus();
 
@@ -78,9 +64,11 @@ class _MyAccountViewState extends State<MyAccountView> {
       return;
     }
 
-    final internationalMobileNumber = PhoneNumberHelper.toInternational(
+    final country = MobileNumberFormField.countryFromCode(_countryIsoCode);
+    final internationalMobileNumber =
+        MobileNumberFormField.toInternationalNumber(
       localNumber: _mobileController.text.trim(),
-      isoCode: _countryIsoCode,
+      dialCode: '+${country.phoneCode}',
     );
 
     context.read<MyAccountBloc>().add(
@@ -109,7 +97,8 @@ class _MyAccountViewState extends State<MyAccountView> {
     return BlocConsumer<MyAccountBloc, MyAccountState>(
       listenWhen: (previous, current) =>
           previous.account != current.account ||
-          previous.errorMessage != current.errorMessage,
+          previous.errorMessage != current.errorMessage ||
+          previous.successMessage != current.successMessage,
       listener: (context, state) {
         final account = state.account;
 
@@ -122,12 +111,18 @@ class _MyAccountViewState extends State<MyAccountView> {
         if (state.errorMessage != null && state.fieldErrors.isEmpty) {
           AppToast.error(context, message: state.errorMessage!);
         }
+
+        if (state.successMessage != null) {
+          AppToast.success(context, message: state.successMessage!);
+          context.read<MyAccountBloc>().add(
+            const MyAccountMessageDismissed(),
+          );
+        }
       },
       buildWhen: (previous, current) =>
           previous.status != current.status ||
           previous.account != current.account ||
-          previous.fieldErrors != current.fieldErrors ||
-          previous.successMessage != current.successMessage,
+          previous.fieldErrors != current.fieldErrors,
       builder: (context, state) {
         if (state.isLoading && !state.hasAccount) {
           return const Scaffold(
@@ -177,28 +172,17 @@ class _MyAccountViewState extends State<MyAccountView> {
                             constraints: const BoxConstraints(maxWidth: 1080),
                             child: Column(
                               children: [
-                                if (state.successMessage != null) ...[
-                                  _SuccessBanner(
-                                    message: state.successMessage!,
-                                    onClose: () {
-                                      context.read<MyAccountBloc>().add(
-                                        const MyAccountMessageDismissed(),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(height: 22),
-                                ],
                                 if (isTablet)
                                   _TabletAccountLayout(
                                     account: account,
                                     form: _buildForm(state),
-                                    passwordAction: widget.onChangePassword,
+                                    passwordAction: _changePassword,
                                   )
                                 else
                                   _MobileAccountLayout(
                                     account: account,
                                     form: _buildForm(state),
-                                    passwordAction: widget.onChangePassword,
+                                    passwordAction: _changePassword,
                                   ),
                               ],
                             ),
@@ -228,31 +212,29 @@ class _MyAccountViewState extends State<MyAccountView> {
           countryIsoCode: _countryIsoCode,
           enabled: !state.isSaving,
           fieldErrors: state.fieldErrors,
-          onCountryChanged: (country) {
-            final isoCode = country?.code?.trim();
-
-            if (isoCode == null || isoCode.isEmpty) {
-              return;
-            }
+          onMobileChanged: (value) {
+            if (_countryIsoCode == value.countryCode) return;
 
             setState(() {
-              _countryIsoCode = isoCode.toUpperCase();
-              _mobileController.clear();
+              _countryIsoCode = value.countryCode;
             });
           },
         ),
         const SizedBox(height: 20),
         _SaveAccountButton(isSaving: state.isSaving, onPressed: _submit),
-        const SizedBox(height: 10),
-        TextButton(
-          onPressed: state.isSaving ? null : _resetForm,
-          child: const Text(
-            'Cancel',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
-        ),
       ],
     );
+  }
+
+  void _changePassword() {
+    final customAction = widget.onChangePassword;
+
+    if (customAction != null) {
+      customAction();
+      return;
+    }
+
+    Navigator.pushNamed(context, Routes.changePassword);
   }
 }
 
@@ -572,7 +554,7 @@ class _AccountFormCard extends StatelessWidget {
     required this.countryIsoCode,
     required this.enabled,
     required this.fieldErrors,
-    required this.onCountryChanged,
+    required this.onMobileChanged,
   });
 
   final GlobalKey<FormState> formKey;
@@ -583,7 +565,7 @@ class _AccountFormCard extends StatelessWidget {
   final String countryIsoCode;
   final bool enabled;
   final Map<String, String> fieldErrors;
-  final ValueChanged<CountryCode> onCountryChanged;
+  final ValueChanged<MobileNumberValue> onMobileChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -625,7 +607,7 @@ class _AccountFormCard extends StatelessWidget {
               controller: mobileController,
               countryIsoCode: countryIsoCode,
               serverError: fieldErrors['mobile_number'] ?? fieldErrors['phone'],
-              onCountryChanged: onCountryChanged,
+              onChanged: onMobileChanged,
             ),
             const SizedBox(height: 18),
             _AccountTextField(
@@ -697,10 +679,13 @@ class _AccountTextField extends StatelessWidget {
         const SizedBox(height: 7),
         TextFormField(
           controller: controller,
-          enabled: enabled,
+          readOnly: !enabled,
           keyboardType: keyboardType,
           maxLines: maxLines,
           validator: validator,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurface,
+          ),
           textInputAction: maxLines > 1
               ? TextInputAction.newline
               : TextInputAction.next,
@@ -723,19 +708,18 @@ class _PhoneNumberField extends StatelessWidget {
     required this.enabled,
     required this.controller,
     required this.countryIsoCode,
-    required this.onCountryChanged,
+    required this.onChanged,
     this.serverError,
   });
 
   final bool enabled;
   final TextEditingController controller;
   final String countryIsoCode;
-  final ValueChanged<CountryCode> onCountryChanged;
+  final ValueChanged<MobileNumberValue> onChanged;
   final String? serverError;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final hasServerError =
         serverError != null && serverError!.trim().isNotEmpty;
 
@@ -744,116 +728,22 @@ class _PhoneNumberField extends StatelessWidget {
       children: [
         const _FieldLabel('Mobile number'),
         const SizedBox(height: 7),
-        FormField<String>(
-          initialValue: controller.text,
-          validator: (_) {
-            final digits = controller.text.replaceAll(RegExp(r'\D'), '');
-
-            if (digits.isEmpty) {
-              return 'Please enter your mobile number.';
-            }
-
-            if (digits.length < 6) {
-              return 'Please enter a valid mobile number.';
-            }
-
-            return null;
-          },
-          builder: (field) {
-            final hasError = field.hasError || hasServerError;
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: enabled
-                        ? theme.colorScheme.surface
-                        : theme.colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      width: hasError ? 1.5 : 1,
-                      color: hasError
-                          ? theme.colorScheme.error
-                          : theme.colorScheme.outlineVariant,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Icon(
-                          Icons.phone_outlined,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 54,
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                      SizedBox(
-                        width: 112,
-                        child: IgnorePointer(
-                          ignoring: !enabled,
-                          child: CountryCodePicker(
-                            key: ValueKey<String>(countryIsoCode),
-                            initialSelection: countryIsoCode,
-                            showCountryOnly: false,
-                            showOnlyCountryWhenClosed: false,
-                            alignLeft: false,
-                            padding: EdgeInsets.zero,
-                            onChanged: onCountryChanged,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 54,
-                        color: theme.colorScheme.outlineVariant,
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: controller,
-                          enabled: enabled,
-                          keyboardType: TextInputType.phone,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          onChanged: field.didChange,
-                          decoration: const InputDecoration(
-                            hintText: 'Phone number',
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                            disabledBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 17,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (field.errorText != null) ...[
-                  const SizedBox(height: 7),
-                  Text(
-                    field.errorText!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                ],
-                if (hasServerError) ...[
-                  const SizedBox(height: 8),
-                  _InlineErrorMessage(message: serverError!),
-                ],
-              ],
-            );
-          },
+        MobileNumberFormField(
+          controller: controller,
+          enabled: enabled,
+          initialCountryCode: countryIsoCode,
+          textInputAction: TextInputAction.next,
+          validator: (value) =>
+              MobileNumberFormField.validateForCountryCode(
+            value: value ?? '',
+            countryCode: countryIsoCode,
+          ),
+          onChanged: onChanged,
         ),
+        if (hasServerError) ...[
+          const SizedBox(height: 8),
+          _InlineErrorMessage(message: serverError!),
+        ],
       ],
     );
   }
@@ -887,16 +777,16 @@ class _DesignationCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                if (accountType.trim().isNotEmpty) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    accountType,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                // if (accountType.trim().isNotEmpty) ...[
+                //   const SizedBox(height: 3),
+                //   Text(
+                //     accountType,
+                //     style: theme.textTheme.bodySmall?.copyWith(
+                //       color: theme.colorScheme.onSurfaceVariant,
+                //       fontWeight: FontWeight.w600,
+                //     ),
+                //   ),
+                // ],
               ],
             ),
           ),
@@ -976,6 +866,9 @@ class _SaveAccountButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final savingColor = theme.colorScheme.onSurface;
+
     return Container(
       width: double.infinity,
       height: 58,
@@ -993,10 +886,13 @@ class _SaveAccountButton extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: isSaving ? null : onPressed,
         icon: isSaving
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2.3),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.3,
+                  color: savingColor,
+                ),
               )
             : const Icon(Icons.save_outlined),
         label: Text(isSaving ? 'Saving...' : 'Save changes'),
@@ -1005,55 +901,10 @@ class _SaveAccountButton extends StatelessWidget {
           disabledBackgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
           elevation: 0,
-          foregroundColor: isSaving
-              ? Theme.of(context).colorScheme.onSurfaceVariant
-              : Colors.white,
+          foregroundColor: Colors.white,
+          disabledForegroundColor: savingColor,
           textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
         ),
-      ),
-    );
-  }
-}
-
-class _SuccessBanner extends StatelessWidget {
-  const _SuccessBanner({required this.message, required this.onClose});
-
-  final String message;
-  final VoidCallback onClose;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF17331D) : const Color(0xFFF1FAEB),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.accent.withAlpha(130)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle_rounded, color: AppColors.accent),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                color: isDark
-                    ? const Color(0xFFCDEFC0)
-                    : const Color(0xFF214A20),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            onPressed: onClose,
-            icon: const Icon(Icons.close_rounded, color: AppColors.accent),
-          ),
-        ],
       ),
     );
   }

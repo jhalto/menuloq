@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/core/di/dependency_factory.dart';
+import 'package:menuloq/features/account/presentation/bloc/change_password/change_password_bloc.dart';
+import 'package:menuloq/features/account/presentation/views/change_password_view.dart';
 import 'package:menuloq/features/auth/domain/enums/verify_email_type.dart';
 import 'package:menuloq/features/auth/presentation/bloc/forgot_password/forgot_password_bloc.dart';
 import 'package:menuloq/features/auth/presentation/bloc/login/auth_bloc.dart';
@@ -117,6 +119,15 @@ class AppRoutes {
           child: BlocProvider<ResetPasswordBloc>(
             create: (_) => _di.createResetPasswordBloc(),
             child: ResetPasswordView(initialEmail: email, otp: otp),
+          ),
+        );
+
+      case Routes.changePassword:
+        return _buildRoute(
+          settings: settings,
+          child: BlocProvider<ChangePasswordBloc>(
+            create: (_) => _di.createChangePasswordBloc(),
+            child: const ChangePasswordView(),
           ),
         );
 
