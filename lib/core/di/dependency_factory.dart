@@ -134,6 +134,15 @@ class DependencyFactory {
     );
   }
 
+  Future<void> logout() async {
+    try {
+      await authRepository.logout();
+    } finally {
+      myAccountRepository.clearCache();
+      businessSettingsRepository.clearCache();
+    }
+  }
+
   ChangePasswordBloc createChangePasswordBloc() {
     return ChangePasswordBloc(changePasswordUseCase: changePasswordUseCase);
   }

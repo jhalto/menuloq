@@ -13,9 +13,14 @@ import '../bloc/my_account_event.dart';
 import '../bloc/my_account_state.dart';
 
 class MyAccountView extends StatefulWidget {
-  const MyAccountView({super.key, this.onChangePassword});
+  const MyAccountView({
+    super.key,
+    this.onChangePassword,
+    this.showHeader = true,
+  });
 
   final VoidCallback? onChangePassword;
+  final bool showHeader;
 
   @override
   State<MyAccountView> createState() => _MyAccountViewState();
@@ -108,7 +113,7 @@ class _MyAccountViewState extends State<MyAccountView> {
           });
         }
 
-        if (state.errorMessage != null && state.fieldErrors.isEmpty) {
+        if (state.errorMessage != null) {
           AppToast.error(context, message: state.errorMessage!);
         }
 
@@ -154,11 +159,12 @@ class _MyAccountViewState extends State<MyAccountView> {
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   slivers: [
-                    SliverToBoxAdapter(
-                      child: _AccountHeader(
-                        canGoBack: Navigator.of(context).canPop(),
+                    if (widget.showHeader)
+                      SliverToBoxAdapter(
+                        child: _AccountHeader(
+                          canGoBack: Navigator.of(context).canPop(),
+                        ),
                       ),
-                    ),
                     SliverPadding(
                       padding: EdgeInsets.fromLTRB(
                         isTablet ? 32 : 16,
@@ -212,7 +218,15 @@ class _MyAccountViewState extends State<MyAccountView> {
           countryIsoCode: _countryIsoCode,
           enabled: !state.isSaving,
           fieldErrors: state.fieldErrors,
+          onChanged: () {
+            context.read<MyAccountBloc>().add(
+              const MyAccountFieldsChanged(),
+            );
+          },
           onMobileChanged: (value) {
+            context.read<MyAccountBloc>().add(
+              const MyAccountFieldsChanged(),
+            );
             if (_countryIsoCode == value.countryCode) return;
 
             setState(() {
@@ -554,6 +568,7 @@ class _AccountFormCard extends StatelessWidget {
     required this.countryIsoCode,
     required this.enabled,
     required this.fieldErrors,
+    required this.onChanged,
     required this.onMobileChanged,
   });
 
@@ -565,6 +580,7 @@ class _AccountFormCard extends StatelessWidget {
   final String countryIsoCode;
   final bool enabled;
   final Map<String, String> fieldErrors;
+  final VoidCallback onChanged;
   final ValueChanged<MobileNumberValue> onMobileChanged;
 
   @override
@@ -582,6 +598,7 @@ class _AccountFormCard extends StatelessWidget {
               icon: Icons.person_outline_rounded,
               hintText: 'Enter your full name',
               serverError: fieldErrors['name'] ?? fieldErrors['full_name'],
+              onChanged: (_) => onChanged(),
               validator: (value) {
                 if ((value ?? '').trim().isEmpty) {
                   return 'Please enter your full name.';
@@ -599,6 +616,7 @@ class _AccountFormCard extends StatelessWidget {
               hintText: 'Enter your email address',
               keyboardType: TextInputType.emailAddress,
               serverError: fieldErrors['email'],
+              onChanged: (_) => onChanged(),
               validator: _validateEmail,
             ),
             const SizedBox(height: 18),
@@ -619,6 +637,7 @@ class _AccountFormCard extends StatelessWidget {
               keyboardType: TextInputType.streetAddress,
               maxLines: 3,
               serverError: fieldErrors['address'],
+              onChanged: (_) => onChanged(),
             ),
           ],
         ),
@@ -654,6 +673,7 @@ class _AccountTextField extends StatelessWidget {
     this.maxLines = 1,
     this.validator,
     this.serverError,
+    this.onChanged,
   });
 
   final String label;
@@ -665,6 +685,7 @@ class _AccountTextField extends StatelessWidget {
   final int maxLines;
   final FormFieldValidator<String>? validator;
   final String? serverError;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -683,6 +704,7 @@ class _AccountTextField extends StatelessWidget {
           keyboardType: keyboardType,
           maxLines: maxLines,
           validator: validator,
+          onChanged: onChanged,
           style: theme.textTheme.bodyLarge?.copyWith(
             color: theme.colorScheme.onSurface,
           ),

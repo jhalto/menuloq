@@ -18,6 +18,7 @@ class BusinessSettingsBloc
     on<BusinessSettingsRefreshRequested>(_onRefreshRequested);
     on<BusinessSettingsTabChanged>(_onTabChanged);
     on<BusinessSettingsSaveRequested>(_onSaveRequested);
+    on<BusinessSettingsFieldsChanged>(_onFieldsChanged);
   }
 
   final GetBusinessSettingsUseCase _getBusinessSettingsUseCase;
@@ -66,6 +67,7 @@ class BusinessSettingsBloc
       state.copyWith(
         status: BusinessSettingsStatus.saving,
         clearMessage: true,
+        clearFieldErrors: true,
       ),
     );
 
@@ -77,6 +79,7 @@ class BusinessSettingsBloc
           status: BusinessSettingsStatus.success,
           settings: settings,
           message: 'Business settings updated successfully.',
+          clearFieldErrors: true,
         ),
       );
     } on AppException catch (error) {
@@ -84,6 +87,7 @@ class BusinessSettingsBloc
         state.copyWith(
           status: BusinessSettingsStatus.failure,
           message: error.message,
+          fieldErrors: _firstValidationErrors(error.errors),
         ),
       );
     } catch (_) {
@@ -96,6 +100,14 @@ class BusinessSettingsBloc
     } finally {
       _isSaveRunning = false;
     }
+  }
+
+  void _onFieldsChanged(
+    BusinessSettingsFieldsChanged event,
+    Emitter<BusinessSettingsState> emit,
+  ) {
+    if (state.fieldErrors.isEmpty) return;
+    emit(state.copyWith(clearFieldErrors: true, clearMessage: true));
   }
 
   Future<void> _loadSettings(
@@ -112,6 +124,7 @@ class BusinessSettingsBloc
       state.copyWith(
         status: BusinessSettingsStatus.loading,
         clearMessage: true,
+        clearFieldErrors: true,
       ),
     );
 
@@ -125,6 +138,7 @@ class BusinessSettingsBloc
           status: BusinessSettingsStatus.success,
           settings: settings,
           clearMessage: true,
+          clearFieldErrors: true,
         ),
       );
     } catch (e) {
@@ -137,5 +151,18 @@ class BusinessSettingsBloc
     } finally {
       _isRequestRunning = false;
     }
+  }
+
+  Map<String, String> _firstValidationErrors(
+    Map<String, List<String>>? errors,
+  ) {
+    if (errors == null) return const {};
+
+    return errors.map(
+      (key, value) => MapEntry(
+        key,
+        value.isEmpty ? 'Invalid value.' : value.first,
+      ),
+    );
   }
 }

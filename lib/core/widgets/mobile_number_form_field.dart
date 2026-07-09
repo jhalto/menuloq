@@ -31,6 +31,7 @@ class MobileNumberFormField extends StatefulWidget {
     this.textInputAction = TextInputAction.next,
     this.onFieldSubmitted,
     this.hintText,
+    this.serverError,
   });
 
   final TextEditingController controller;
@@ -43,6 +44,7 @@ class MobileNumberFormField extends StatefulWidget {
   final TextInputAction textInputAction;
   final ValueChanged<String>? onFieldSubmitted;
   final String? hintText;
+  final String? serverError;
 
   static String toInternationalNumber({
     required String localNumber,
@@ -74,11 +76,15 @@ class MobileNumberFormField extends StatefulWidget {
     String emptyMessage = 'Please enter your mobile number.',
     String invalidMessage = 'Please enter a valid mobile number.',
   }) {
-    final digits = value.replaceAll(RegExp(r'\D'), '');
+    var digits = value.replaceAll(RegExp(r'\D'), '');
 
     if (digits.isEmpty) return emptyMessage;
 
     if (country.countryCode.toUpperCase() == 'BD') {
+      if (digits.length == 10 && digits.startsWith('1')) {
+        digits = '0$digits';
+      }
+
       if (!RegExp(r'^01[3-9]\d{8}$').hasMatch(digits)) {
         return 'Bangladesh mobile number must be 11 digits and start with 01.';
       }
@@ -232,13 +238,18 @@ class _MobileNumberFormFieldState extends State<MobileNumberFormField> {
         });
 
         widget.onCountryChanged?.call(country);
-        widget.onChanged?.call(value);
+        _handleChanged(widget.controller.text);
       },
     );
   }
 
   void _handleChanged(String value) {
-    final digits = value.replaceAll(RegExp(r'\D'), '');
+    var digits = value.replaceAll(RegExp(r'\D'), '');
+
+    if (_selectedCountry.countryCode.toUpperCase() == 'BD' &&
+        digits.startsWith('1')) {
+      digits = '0$digits';
+    }
 
     if (digits != value) {
       widget.controller.value = TextEditingValue(
@@ -336,6 +347,7 @@ class _MobileNumberFormFieldState extends State<MobileNumberFormField> {
             ],
             decoration: InputDecoration(
               hintText: widget.hintText ?? _hintText,
+              errorText: widget.serverError,
               constraints: const BoxConstraints(minHeight: _fieldHeight),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,

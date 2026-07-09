@@ -36,6 +36,18 @@ class BusinessSettingsRemoteDataSourceImpl
         response.data as Map<String, dynamic>,
       );
     } on DioException catch (e) {
+      final responseData = e.response?.data;
+
+      if (responseData is Map) {
+        final json = Map<String, dynamic>.from(responseData);
+        throw AppException(
+          message:
+              json['message']?.toString() ??
+              'Please check your information and try again.',
+          errors: _extractValidationErrors(json['errors']),
+        );
+      }
+
       throw AppException(message: handleDioError(e));
     } on AppException {
       rethrow;
@@ -62,6 +74,20 @@ class BusinessSettingsRemoteDataSourceImpl
 
       for (final option in deliveryOptions) {
         formData.fields.add(MapEntry('delivery_options[]', option));
+      }
+
+      final logoBytes = params.logoBytes;
+      final logoFileName = params.logoFileName;
+      if (logoBytes != null &&
+          logoBytes.isNotEmpty &&
+          logoFileName != null &&
+          logoFileName.isNotEmpty) {
+        formData.files.add(
+          MapEntry(
+            'logo',
+            MultipartFile.fromBytes(logoBytes, filename: logoFileName),
+          ),
+        );
       }
 
       final response = await _dio.post(
@@ -105,6 +131,18 @@ class BusinessSettingsRemoteDataSourceImpl
       debugPrint('Response Data: ${e.response?.data}');
       debugPrint('=====================================================');
 
+      final responseData = e.response?.data;
+
+      if (responseData is Map) {
+        final json = Map<String, dynamic>.from(responseData);
+        throw AppException(
+          message:
+              json['message']?.toString() ??
+              'Please check your information and try again.',
+          errors: _extractValidationErrors(json['errors']),
+        );
+      }
+
       throw AppException(message: handleDioError(e));
     } on AppException {
       rethrow;
@@ -113,5 +151,16 @@ class BusinessSettingsRemoteDataSourceImpl
         message: 'Something went wrong while updating business settings.',
       );
     }
+  }
+
+  Map<String, List<String>>? _extractValidationErrors(dynamic rawErrors) {
+    if (rawErrors is! Map) return null;
+
+    return rawErrors.map<String, List<String>>((key, value) {
+      final messages = value is List
+          ? value.map((item) => item.toString()).toList()
+          : [value.toString()];
+      return MapEntry(key.toString(), messages);
+    });
   }
 }

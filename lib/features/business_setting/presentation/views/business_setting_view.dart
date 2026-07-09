@@ -4,6 +4,8 @@ import 'package:menuloq/config/route/route_name.dart';
 import 'package:menuloq/core/di/dependency_factory.dart';
 import 'package:menuloq/core/global/app_toast.dart';
 import 'package:menuloq/core/utils/loader.dart';
+import 'package:menuloq/features/account/presentation/bloc/my_account_bloc.dart';
+import 'package:menuloq/features/account/presentation/bloc/my_account_event.dart';
 import 'package:menuloq/features/business_setting/domain/intities/business_settings_entity.dart';
 import 'package:menuloq/features/business_setting/domain/params/update_business_settings_params.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/business_profile_card.dart';
@@ -16,9 +18,13 @@ import '../bloc/business_settings_event.dart';
 import '../bloc/business_settings_state.dart';
 
 class BusinessSettingsView extends StatelessWidget {
-  const BusinessSettingsView({super.key});
+  const BusinessSettingsView({
+    super.key,
+    this.showHeader = true,
+  });
 
   static const double _tabletBreakpoint = 720;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +44,9 @@ class BusinessSettingsView extends StatelessWidget {
         if (state.status == BusinessSettingsStatus.success &&
             state.message != null) {
           AppToast.success(context, message: state.message!);
+          context.read<MyAccountBloc>().add(
+            const MyAccountRefreshRequested(),
+          );
         }
       },
       child: Scaffold(
@@ -49,7 +58,7 @@ class BusinessSettingsView extends StatelessWidget {
 
               return Column(
                 children: [
-                  const _BusinessSettingsHeader(),
+                  if (showHeader) const _BusinessSettingsHeader(),
                   const _SettingsTabBar(),
                   Expanded(
                     child: BlocBuilder<BusinessSettingsBloc, BusinessSettingsState>(
@@ -157,7 +166,7 @@ class _BusinessSettingsHeaderState extends State<_BusinessSettingsHeader> {
     setState(() => _isLoggingOut = true);
 
     try {
-      await DependencyFactory.instance.authRepository.logout();
+      await DependencyFactory.instance.logout();
 
       if (!mounted) return;
 
@@ -500,6 +509,9 @@ class _OrderDeliverySettingsCardState
     final isSaving = context.select(
       (BusinessSettingsBloc bloc) => bloc.state.isSaving,
     );
+    final fieldErrors = context.select(
+      (BusinessSettingsBloc bloc) => bloc.state.fieldErrors,
+    );
     final options = widget.settings.options;
 
     return Form(
@@ -524,6 +536,12 @@ class _OrderDeliverySettingsCardState
                   }
                   return null;
                 },
+                serverError: fieldErrors['delivery_charge'],
+                onChanged: (_) {
+                  context.read<BusinessSettingsBloc>().add(
+                    const BusinessSettingsFieldsChanged(),
+                  );
+                },
               ),
               const SizedBox(height: 20),
               const FieldLabel(text: 'Delivery instructions'),
@@ -534,6 +552,12 @@ class _OrderDeliverySettingsCardState
                 hintText: 'Add delivery instructions',
                 maxLines: 3,
                 textInputAction: TextInputAction.newline,
+                serverError: fieldErrors['instructions'],
+                onChanged: (_) {
+                  context.read<BusinessSettingsBloc>().add(
+                    const BusinessSettingsFieldsChanged(),
+                  );
+                },
               ),
               const SizedBox(height: 22),
               const FieldLabel(text: 'Enabled order options'),
@@ -555,12 +579,25 @@ class _OrderDeliverySettingsCardState
                                   ? _selectedOptions.add(option)
                                   : _selectedOptions.remove(option);
                             });
+                            context.read<BusinessSettingsBloc>().add(
+                              const BusinessSettingsFieldsChanged(),
+                            );
                           },
                     selectedColor: AppColors.accent.withAlpha(45),
                     checkmarkColor: AppColors.accent,
                   );
                 }).toList(),
               ),
+              if (fieldErrors['delivery_options'] != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  fieldErrors['delivery_options']!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 22),
@@ -627,6 +664,9 @@ class _RegionalSettingsCardState extends State<_RegionalSettingsCard> {
     final isSaving = context.select(
       (BusinessSettingsBloc bloc) => bloc.state.isSaving,
     );
+    final fieldErrors = context.select(
+      (BusinessSettingsBloc bloc) => bloc.state.fieldErrors,
+    );
 
     return Column(
       children: [
@@ -639,8 +679,14 @@ class _RegionalSettingsCardState extends State<_RegionalSettingsCard> {
               items: options.countries,
               enabled: !business.countryLocked && !isSaving,
               locked: business.countryLocked,
+              errorText: fieldErrors['country'],
               onChanged: (value) {
-                if (value != null) setState(() => _country = value);
+                if (value != null) {
+                  setState(() => _country = value);
+                  context.read<BusinessSettingsBloc>().add(
+                    const BusinessSettingsFieldsChanged(),
+                  );
+                }
               },
             ),
             const SizedBox(height: 20),
@@ -650,8 +696,14 @@ class _RegionalSettingsCardState extends State<_RegionalSettingsCard> {
               items: options.currencies,
               enabled: !business.currencyLocked && !isSaving,
               locked: business.currencyLocked,
+              errorText: fieldErrors['currency'],
               onChanged: (value) {
-                if (value != null) setState(() => _currency = value);
+                if (value != null) {
+                  setState(() => _currency = value);
+                  context.read<BusinessSettingsBloc>().add(
+                    const BusinessSettingsFieldsChanged(),
+                  );
+                }
               },
             ),
             const SizedBox(height: 20),
@@ -660,8 +712,14 @@ class _RegionalSettingsCardState extends State<_RegionalSettingsCard> {
               value: _timezone,
               items: options.timezones,
               enabled: !isSaving,
+              errorText: fieldErrors['timezone'],
               onChanged: (value) {
-                if (value != null) setState(() => _timezone = value);
+                if (value != null) {
+                  setState(() => _timezone = value);
+                  context.read<BusinessSettingsBloc>().add(
+                    const BusinessSettingsFieldsChanged(),
+                  );
+                }
               },
             ),
             const SizedBox(height: 20),
@@ -669,8 +727,14 @@ class _RegionalSettingsCardState extends State<_RegionalSettingsCard> {
               value: _language,
               languages: options.languages,
               enabled: !isSaving,
+              errorText: fieldErrors['website_default_language'],
               onChanged: (value) {
-                if (value != null) setState(() => _language = value);
+                if (value != null) {
+                  setState(() => _language = value);
+                  context.read<BusinessSettingsBloc>().add(
+                    const BusinessSettingsFieldsChanged(),
+                  );
+                }
               },
             ),
           ],
@@ -726,6 +790,9 @@ class _AvailabilitySettingsCardState
     final isSaving = context.select(
       (BusinessSettingsBloc bloc) => bloc.state.isSaving,
     );
+    final fieldErrors = context.select(
+      (BusinessSettingsBloc bloc) => bloc.state.fieldErrors,
+    );
 
     return Column(
       children: [
@@ -733,8 +800,23 @@ class _AvailabilitySettingsCardState
           isAvailable: _isAvailable,
           onChanged: isSaving
               ? (_) {}
-              : (value) => setState(() => _isAvailable = value),
+              : (value) {
+                  setState(() => _isAvailable = value);
+                  context.read<BusinessSettingsBloc>().add(
+                    const BusinessSettingsFieldsChanged(),
+                  );
+                },
         ),
+        if (fieldErrors['is_available'] != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            fieldErrors['is_available']!,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.error,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
         const SizedBox(height: 22),
         _SettingsSaveButton(isSaving: isSaving, onPressed: _save),
       ],
@@ -905,6 +987,7 @@ class _AppDropdownField extends StatelessWidget {
     required this.onChanged,
     this.enabled = true,
     this.locked = false,
+    this.errorText,
   });
 
   final String label;
@@ -913,10 +996,20 @@ class _AppDropdownField extends StatelessWidget {
   final ValueChanged<String?> onChanged;
   final bool enabled;
   final bool locked;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final selectedValue = items.containsKey(value) ? value : null;
+    final textColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final mutedColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final fillColor = isDark ? AppColors.darkFill : AppColors.fill;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
+    final menuColor = isDark ? AppColors.darkCard : AppColors.surface;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -926,15 +1019,61 @@ class _AppDropdownField extends StatelessWidget {
         DropdownButtonFormField<String>(
           value: selectedValue,
           isExpanded: true,
+          menuMaxHeight: 340,
+          borderRadius: BorderRadius.circular(8),
+          dropdownColor: menuColor,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: mutedColor),
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: textColor,
+            fontWeight: FontWeight.w700,
+          ),
+          hint: Text(
+            'Select ${label.toLowerCase()}',
+            style: theme.textTheme.bodyLarge?.copyWith(color: mutedColor),
+          ),
           onChanged: enabled ? onChanged : null,
           items: items.entries.map((entry) {
             return DropdownMenuItem<String>(
               value: entry.key,
-              child: Text(entry.value, overflow: TextOverflow.ellipsis),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  entry.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: entry.key == selectedValue
+                        ? FontWeight.w800
+                        : FontWeight.w600,
+                  ),
+                ),
+              ),
             );
           }).toList(),
           decoration: InputDecoration(
-            suffixIcon: locked ? const Icon(Icons.lock_outline_rounded) : null,
+            prefixIcon: Icon(_dropdownFieldIcon(label), color: mutedColor),
+            suffixIcon: locked
+                ? Icon(Icons.lock_outline_rounded, color: mutedColor)
+                : null,
+            filled: true,
+            fillColor: fillColor,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: borderColor.withAlpha(150)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.darkAccent : AppColors.accent,
+                width: 1.5,
+              ),
+            ),
+            errorText: errorText,
           ),
         ),
       ],
@@ -948,16 +1087,26 @@ class _LanguageDropdownField extends StatelessWidget {
     required this.languages,
     required this.onChanged,
     this.enabled = true,
+    this.errorText,
   });
 
   final String value;
   final Map<String, LanguageOptionEntity> languages;
   final ValueChanged<String?> onChanged;
   final bool enabled;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final selectedValue = languages.containsKey(value) ? value : null;
+    final textColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+    final mutedColor =
+        isDark ? AppColors.darkTextSecondary : AppColors.textSecondary;
+    final fillColor = isDark ? AppColors.darkFill : AppColors.fill;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.border;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -967,20 +1116,86 @@ class _LanguageDropdownField extends StatelessWidget {
         DropdownButtonFormField<String>(
           value: selectedValue,
           isExpanded: true,
+          menuMaxHeight: 340,
+          borderRadius: BorderRadius.circular(8),
+          dropdownColor: isDark ? AppColors.darkCard : AppColors.surface,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: mutedColor),
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: textColor,
+            fontWeight: FontWeight.w700,
+          ),
+          hint: Text(
+            'Select language',
+            style: theme.textTheme.bodyLarge?.copyWith(color: mutedColor),
+          ),
           onChanged: enabled ? onChanged : null,
           items: languages.entries.map((entry) {
             final language = entry.value;
 
             return DropdownMenuItem<String>(
               value: entry.key,
-              child: Text(
-                '${language.name} (${entry.key})',
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  if (language.flag.trim().isNotEmpty) ...[
+                    Text(
+                      language.flag,
+                      style: const TextStyle(fontSize: 20),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: Text(
+                      '${language.name} (${entry.key})',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: textColor,
+                        fontWeight: entry.key == selectedValue
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }).toList(),
+          decoration: InputDecoration(
+            prefixIcon: Icon(Icons.translate_rounded, color: mutedColor),
+            filled: true,
+            fillColor: fillColor,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: borderColor),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: borderColor.withAlpha(150)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.darkAccent : AppColors.accent,
+                width: 1.5,
+              ),
+            ),
+            errorText: errorText,
+          ),
         ),
       ],
     );
+  }
+}
+
+IconData _dropdownFieldIcon(String label) {
+  switch (label) {
+    case 'Country':
+      return Icons.public_rounded;
+    case 'Currency':
+      return Icons.payments_outlined;
+    case 'Timezone':
+      return Icons.schedule_rounded;
+    default:
+      return Icons.tune_rounded;
   }
 }

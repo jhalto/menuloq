@@ -1,4 +1,5 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthLocalDataSource {
   AuthLocalDataSource(this._storage);
@@ -102,6 +103,13 @@ class AuthLocalDataSource {
     await _storage.delete(key: _businessIdKey);
     await _storage.delete(key: _businessNameKey);
     await _storage.delete(key: _businessUserNameKey);
+  }
+
+  Future<void> clearAllLocalData() async {
+    await _storage.deleteAll();
+
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.clear();
   }
 
   Future<String?> getUserName() {

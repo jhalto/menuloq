@@ -9,4 +9,6 @@ abstract class MyAccountRepository {
   Future<MyAccountEntity> updateMyAccount(UpdateMyAccountParams params);
 
   Future<String> changePassword(ChangePasswordParams params);
+
+  void clearCache();
 }

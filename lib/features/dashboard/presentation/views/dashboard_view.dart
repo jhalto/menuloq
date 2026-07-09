@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:menuloq/config/route/route_name.dart';
 
 import '../../../../config/theme/app_colors.dart';
 
@@ -8,42 +7,37 @@ class DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                Routes.login,
-                (route) => false,
-              );
-            },
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: const Center(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ColoredBox(
+      color: isDark ? AppColors.darkBackground : AppColors.background,
+      child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.dashboard_rounded, size: 80, color: AppColors.primary),
-            SizedBox(height: 24),
+            Icon(
+              Icons.dashboard_rounded,
+              size: 80,
+              color: isDark ? AppColors.darkAccent : AppColors.primary,
+            ),
+            const SizedBox(height: 24),
             Text(
               'Welcome to MenuLoq!',
-              style: TextStyle(
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color:
+                    isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               'Your dashboard is coming soon.',
               style: TextStyle(
                 fontSize: 16,
-                color: AppColors.textSecondary,
+                color: isDark
+                    ? AppColors.darkTextSecondary
+                    : AppColors.textSecondary,
               ),
             ),
           ],

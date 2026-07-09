@@ -10,4 +10,6 @@ abstract class BusinessSettingsRepository {
   Future<BusinessSettingsEntity> updateBusinessSettings(
     UpdateBusinessSettingsParams params,
   );
+
+  void clearCache();
 }

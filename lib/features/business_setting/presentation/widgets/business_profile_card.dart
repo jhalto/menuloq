@@ -1,7 +1,9 @@
-import 'package:country_code_picker/country_code_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:menuloq/config/theme/app_colors.dart';
+import 'package:menuloq/core/global/app_toast.dart';
+import 'package:menuloq/core/helper/image_picker_helper.dart';
+import 'package:menuloq/core/helper/phone_number_helper.dart';
 import 'package:menuloq/core/widgets/mobile_number_form_field.dart';
 import 'package:menuloq/features/business_setting/domain/intities/business_settings_entity.dart';
 import 'package:menuloq/features/business_setting/domain/params/update_business_settings_params.dart';
@@ -10,7 +12,6 @@ import 'package:menuloq/features/business_setting/presentation/bloc/business_set
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_state.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/business_setting_text_field.dart';
 import 'package:menuloq/features/business_setting/presentation/widgets/field_label.dart';
-import 'package:phone_numbers_parser/phone_numbers_parser.dart';
 
 class BusinessProfileCard extends StatefulWidget {
   const BusinessProfileCard({super.key, required this.settings});
@@ -33,6 +34,8 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
 
   String _countryIsoCode = 'BD';
   bool _formFilledFromApi = false;
+  PickedAppImage? _selectedLogo;
+  bool _isPickingLogo = false;
 
   @override
   void initState() {
@@ -44,8 +47,9 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
   void didUpdateWidget(covariant BusinessProfileCard oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (oldWidget.settings.business.id != widget.settings.business.id) {
+    if (oldWidget.settings != widget.settings) {
       _formFilledFromApi = false;
+      _selectedLogo = null;
       _fillFormFromApi();
     }
   }
@@ -60,14 +64,20 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
     _ownerNameController.text = business.ownerName;
     _emailController.text = business.businessEmail;
 
-    _countryIsoCode = business.country.trim().isNotEmpty
-        ? business.country.trim().toUpperCase()
-        : 'BD';
-
-    _mobileController.text = PhoneNumberHelper.toLocalDisplayNumber(
-      fullNumber: business.businessMobileNumber,
-      isoCode: _countryIsoCode,
+    final fallbackCountry = MobileNumberFormField.countryFromCode(
+      business.country,
     );
+    final mobileDialCode =
+        business.mobileDialCode ?? '+${fallbackCountry.phoneCode}';
+    final parsedPhone = PhoneNumberHelper.parse(
+      MobileNumberFormField.toInternationalNumber(
+        localNumber: business.businessMobileNumber,
+        dialCode: mobileDialCode,
+      ),
+    );
+
+    _countryIsoCode = parsedPhone.isoCode;
+    _mobileController.text = parsedPhone.localNumber;
 
     _addressController.text = business.businessAddress ?? '';
 
@@ -105,8 +115,88 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
           businessMobileNumber: _mobileController.text.trim(),
           mobileDialCode: '+${mobileCountry.phoneCode}',
           businessAddress: _addressController.text.trim(),
+          logoBytes: _selectedLogo?.bytes,
+          logoFileName: _selectedLogo?.fileName,
         ),
       ),
+    );
+  }
+
+  void _onFieldChanged() {
+    context.read<BusinessSettingsBloc>().add(
+      const BusinessSettingsFieldsChanged(),
+    );
+  }
+
+  Future<void> _pickLogo() async {
+    if (_isPickingLogo) return;
+
+    final source = await _showImageSourcePicker();
+    if (source == null || !mounted) return;
+
+    setState(() => _isPickingLogo = true);
+
+    try {
+      final image = await ImagePickerHelper.pick(source: source);
+      if (!mounted || image == null) return;
+
+      setState(() => _selectedLogo = image);
+      _onFieldChanged();
+    } on ImagePickerException catch (error) {
+      if (mounted) AppToast.error(context, message: error.message);
+    } catch (_) {
+      if (mounted) {
+        AppToast.error(
+          context,
+          message: 'Could not select the image. Please try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPickingLogo = false);
+    }
+  }
+
+  Future<AppImageSource?> _showImageSourcePicker() {
+    final theme = Theme.of(context);
+
+    return showModalBottomSheet<AppImageSource>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: theme.colorScheme.surface,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Choose logo source',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: const Text('Camera'),
+                  onTap: () {
+                    Navigator.pop(context, AppImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Photo library'),
+                  onTap: () {
+                    Navigator.pop(context, AppImageSource.gallery);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -170,6 +260,11 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
                           isWide: isWide,
                           businessName: business.businessName,
                           logoUrl: business.logoUrl,
+                          selectedLogo: _selectedLogo,
+                          isPicking: _isPickingLogo,
+                          enabled: !isSaving,
+                          onPick: _pickLogo,
+                          errorText: state.fieldErrors['logo'],
                         ),
 
                         const SizedBox(height: 28),
@@ -181,6 +276,8 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
                           enabled: !isSaving,
                           hintText: 'Enter business name',
                           validator: _requiredValidator,
+                          serverError: state.fieldErrors['business_name'],
+                          onChanged: (_) => _onFieldChanged(),
                         ),
 
                         const SizedBox(height: 20),
@@ -206,6 +303,8 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
                           enabled: !isSaving,
                           hintText: 'Enter owner name',
                           validator: _requiredValidator,
+                          serverError: state.fieldErrors['owner_name'],
+                          onChanged: (_) => _onFieldChanged(),
                         ),
 
                         const SizedBox(height: 20),
@@ -218,20 +317,30 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
                           hintText: 'Enter business email',
                           keyboardType: TextInputType.emailAddress,
                           validator: _emailValidator,
+                          serverError: state.fieldErrors['business_email'],
+                          onChanged: (_) => _onFieldChanged(),
                         ),
 
                         const SizedBox(height: 20),
 
                         FieldLabel(text: 'Business mobile number'),
                         const SizedBox(height: 8),
-                        _PhoneInputRow(
+                        MobileNumberFormField(
+                          controller: _mobileController,
                           enabled: !isSaving,
-                          countryIsoCode: _countryIsoCode,
-                          mobileController: _mobileController,
-                          onCountryChanged: (value) {
+                          initialCountryCode: _countryIsoCode,
+                          serverError:
+                              state.fieldErrors['business_mobile_number'],
+                          validator: (value) =>
+                              MobileNumberFormField.validateForCountryCode(
+                            value: value ?? '',
+                            countryCode: _countryIsoCode,
+                          ),
+                          onChanged: (value) {
+                            _onFieldChanged();
+                            if (_countryIsoCode == value.countryCode) return;
                             setState(() {
-                              _countryIsoCode = value;
-                              _mobileController.clear();
+                              _countryIsoCode = value.countryCode;
                             });
                           },
                         ),
@@ -246,6 +355,8 @@ class BusinessProfileCardState extends State<BusinessProfileCard> {
                           hintText: 'Enter business address',
                           maxLines: 3,
                           textInputAction: TextInputAction.newline,
+                          serverError: state.fieldErrors['business_address'],
+                          onChanged: (_) => _onFieldChanged(),
                         ),
 
                         const SizedBox(height: 22),
@@ -308,23 +419,41 @@ class _LogoPickerSection extends StatelessWidget {
     required this.isWide,
     required this.businessName,
     required this.logoUrl,
+    required this.selectedLogo,
+    required this.isPicking,
+    required this.enabled,
+    required this.onPick,
+    this.errorText,
   });
 
   final bool isWide;
   final String businessName;
   final String? logoUrl;
+  final PickedAppImage? selectedLogo;
+  final bool isPicking;
+  final bool enabled;
+  final VoidCallback onPick;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _BusinessLogoPreview(businessName: businessName, logoUrl: logoUrl),
+        _BusinessLogoPreview(
+          businessName: businessName,
+          logoUrl: logoUrl,
+          selectedLogo: selectedLogo,
+        ),
         const SizedBox(width: 34),
-        const Expanded(
+        Expanded(
           child: _LogoPickerActions(
             textAlign: TextAlign.start,
             crossAxisAlignment: CrossAxisAlignment.start,
+            isPicking: isPicking,
+            enabled: enabled,
+            onPick: onPick,
+            errorText: errorText,
           ),
         ),
       ],
@@ -336,10 +465,12 @@ class _BusinessLogoPreview extends StatelessWidget {
   const _BusinessLogoPreview({
     required this.businessName,
     required this.logoUrl,
+    required this.selectedLogo,
   });
 
   final String businessName;
   final String? logoUrl;
+  final PickedAppImage? selectedLogo;
 
   @override
   Widget build(BuildContext context) {
@@ -370,7 +501,13 @@ class _BusinessLogoPreview extends StatelessWidget {
               ),
             ),
             clipBehavior: Clip.antiAlias,
-            child: logoUrl != null && logoUrl!.trim().isNotEmpty
+            child: selectedLogo != null
+                ? Image.memory(
+                    selectedLogo!.bytes,
+                    fit: BoxFit.cover,
+                    gaplessPlayback: true,
+                  )
+                : logoUrl != null && logoUrl!.trim().isNotEmpty
                 ? Image.network(
                     logoUrl!,
                     fit: BoxFit.cover,
@@ -428,10 +565,18 @@ class _LogoPickerActions extends StatelessWidget {
   const _LogoPickerActions({
     required this.textAlign,
     required this.crossAxisAlignment,
+    required this.isPicking,
+    required this.enabled,
+    required this.onPick,
+    this.errorText,
   });
 
   final TextAlign textAlign;
   final CrossAxisAlignment crossAxisAlignment;
+  final bool isPicking;
+  final bool enabled;
+  final VoidCallback onPick;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
@@ -442,9 +587,7 @@ class _LogoPickerActions extends StatelessWidget {
       crossAxisAlignment: crossAxisAlignment,
       children: [
         OutlinedButton(
-          onPressed: () {
-            // TODO: Open image picker.
-          },
+          onPressed: enabled && !isPicking ? onPick : null,
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(160, 54),
             foregroundColor: AppColors.accent,
@@ -453,10 +596,16 @@ class _LogoPickerActions extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
           ),
-          child: const Text(
-            'Change logo',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-          ),
+          child: isPicking
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.2),
+                )
+              : const Text(
+                  'Change logo',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -469,6 +618,17 @@ class _LogoPickerActions extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+        if (errorText != null && errorText!.trim().isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            errorText!,
+            textAlign: textAlign,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.error,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -606,71 +766,6 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-class _PhoneInputRow extends StatelessWidget {
-  const _PhoneInputRow({
-    required this.enabled,
-    required this.countryIsoCode,
-    required this.mobileController,
-    required this.onCountryChanged,
-  });
-
-  final bool enabled;
-  final String countryIsoCode;
-  final TextEditingController mobileController;
-  final ValueChanged<String> onCountryChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 132,
-          child: IgnorePointer(
-            ignoring: !enabled,
-            child: CountryCodePicker(
-              initialSelection: countryIsoCode,
-              favorite: const [
-                'BD',
-                '+880',
-                'US',
-                '+1',
-                'GB',
-                '+44',
-                'IN',
-                '+91',
-              ],
-              showCountryOnly: false,
-              showOnlyCountryWhenClosed: false,
-              alignLeft: false,
-              padding: EdgeInsets.zero,
-              onChanged: (country) {
-                final code = country.code;
-                if (code == null || code.trim().isEmpty) return;
-                onCountryChanged(code.toUpperCase());
-              },
-            ),
-          ),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: BusinessSettingTextField(
-            controller: mobileController,
-            enabled: enabled,
-            hintText: countryIsoCode == 'BD' ? '017XXXXXXXX' : 'Phone number',
-            keyboardType: TextInputType.phone,
-            validator: (value) {
-              return PhoneNumberHelper.validateMobileNumber(
-                value: value ?? '',
-                isoCode: countryIsoCode,
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _LockedUrlHint extends StatelessWidget {
   const _LockedUrlHint();
 
@@ -699,121 +794,5 @@ class _LockedUrlHint extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-const List<String> _phoneCountryCodes = [
-  '+880',
-  '+1',
-  '+44',
-  '+91',
-  '+971',
-  '+966',
-  '+974',
-  '+965',
-  '+60',
-  '+65',
-];
-
-class PhoneNumberHelper {
-  const PhoneNumberHelper._();
-
-  static String? validateMobileNumber({
-    required String value,
-    required String isoCode,
-  }) {
-    final rawValue = value.trim();
-
-    if (rawValue.isEmpty) {
-      return 'Please enter mobile number.';
-    }
-
-    final normalizedIsoCode = isoCode.trim().toUpperCase();
-
-    if (normalizedIsoCode == 'BD') {
-      final digits = rawValue.replaceAll(RegExp(r'\D'), '');
-
-      if (!RegExp(r'^01[3-9]\d{8}$').hasMatch(digits)) {
-        return 'Bangladesh mobile number must be 11 digits and start with 01.';
-      }
-    }
-
-    final iso = _toIsoCode(normalizedIsoCode);
-
-    if (iso == null) {
-      return 'Unsupported country code.';
-    }
-
-    try {
-      final phoneNumber = PhoneNumber.parse(rawValue, destinationCountry: iso);
-
-      final isValidMobile = phoneNumber.isValid(type: PhoneNumberType.mobile);
-
-      if (!isValidMobile) {
-        return 'Please enter a valid mobile number.';
-      }
-
-      return null;
-    } catch (_) {
-      return 'Please enter a valid mobile number.';
-    }
-  }
-
-  static String toLocalDisplayNumber({
-    required String fullNumber,
-    required String isoCode,
-  }) {
-    final value = fullNumber.trim();
-
-    if (value.isEmpty) return '';
-
-    final normalizedIsoCode = isoCode.trim().toUpperCase();
-
-    if (normalizedIsoCode == 'BD') {
-      final digits = value.replaceAll(RegExp(r'\D'), '');
-
-      if (digits.startsWith('880') && digits.length == 13) {
-        return '0${digits.substring(3)}';
-      }
-
-      if (digits.startsWith('01') && digits.length == 11) {
-        return digits;
-      }
-    }
-
-    try {
-      final phoneNumber = PhoneNumber.parse(value);
-      return phoneNumber.formatNsn();
-    } catch (_) {
-      return value;
-    }
-  }
-
-  static String toInternationalNumber({
-    required String value,
-    required String isoCode,
-  }) {
-    final iso = _toIsoCode(isoCode.trim().toUpperCase());
-
-    if (iso == null) return value.trim();
-
-    try {
-      final phoneNumber = PhoneNumber.parse(
-        value.trim(),
-        destinationCountry: iso,
-      );
-
-      return phoneNumber.international.replaceAll(RegExp(r'\s+'), '');
-    } catch (_) {
-      return value.trim();
-    }
-  }
-
-  static IsoCode? _toIsoCode(String isoCode) {
-    try {
-      return IsoCode.values.byName(isoCode);
-    } catch (_) {
-      return null;
-    }
   }
 }

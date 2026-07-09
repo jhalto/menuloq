@@ -22,12 +22,14 @@ class BusinessSettingsState {
     this.selectedTab = BusinessSettingsTab.profile,
     this.settings,
     this.message,
+    this.fieldErrors = const {},
   });
 
   final BusinessSettingsStatus status;
   final BusinessSettingsTab selectedTab;
   final BusinessSettingsEntity? settings;
   final String? message;
+  final Map<String, String> fieldErrors;
 
   bool get isLoading => status == BusinessSettingsStatus.loading;
   bool get isSaving => status == BusinessSettingsStatus.saving;
@@ -39,12 +41,17 @@ class BusinessSettingsState {
     BusinessSettingsEntity? settings,
     String? message,
     bool clearMessage = false,
+    Map<String, String>? fieldErrors,
+    bool clearFieldErrors = false,
   }) {
     return BusinessSettingsState(
       status: status ?? this.status,
       selectedTab: selectedTab ?? this.selectedTab,
       settings: settings ?? this.settings,
       message: clearMessage ? null : message ?? this.message,
+      fieldErrors: clearFieldErrors
+          ? const {}
+          : fieldErrors ?? this.fieldErrors,
     );
   }
 }

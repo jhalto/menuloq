@@ -13,6 +13,8 @@ class BusinessSettingTextField extends StatelessWidget {
     this.maxLines = 1,
     this.suffixIcon,
     this.validator,
+    this.serverError,
+    this.onChanged,
   });
 
   final TextEditingController controller;
@@ -24,6 +26,8 @@ class BusinessSettingTextField extends StatelessWidget {
   final int maxLines;
   final IconData? suffixIcon;
   final String? Function(String?)? validator;
+  final String? serverError;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -37,12 +41,14 @@ class BusinessSettingTextField extends StatelessWidget {
       textInputAction: textInputAction,
       maxLines: maxLines,
       validator: validator,
+      onChanged: onChanged,
       style: TextStyle(
         color: isDark ? AppColors.darkTextPrimary : AppColors.textPrimary,
         fontWeight: FontWeight.w600,
       ),
       decoration: InputDecoration(
         hintText: hintText,
+        errorText: serverError,
         suffixIcon: suffixIcon == null
             ? null
             : Icon(

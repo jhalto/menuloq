@@ -12,6 +12,7 @@ class BusinessSettingsRepositoryImpl implements BusinessSettingsRepository {
 
   BusinessSettingsEntity? _cachedSettings;
   Future<BusinessSettingsEntity>? _runningRequest;
+  int _cacheGeneration = 0;
 
   @override
   Future<BusinessSettingsEntity> getBusinessSettings({
@@ -25,8 +26,11 @@ class BusinessSettingsRepositoryImpl implements BusinessSettingsRepository {
       return _runningRequest!;
     }
 
+    final generation = _cacheGeneration;
     final request = _remoteDataSource.getBusinessSettings().then((settings) {
-      _cachedSettings = settings;
+      if (generation == _cacheGeneration) {
+        _cachedSettings = settings;
+      }
       return settings;
     }).whenComplete(() {
       _runningRequest = null;
@@ -51,5 +55,12 @@ class BusinessSettingsRepositoryImpl implements BusinessSettingsRepository {
     }
 
     return getBusinessSettings(forceRefresh: true);
+  }
+
+  @override
+  void clearCache() {
+    _cacheGeneration++;
+    _cachedSettings = null;
+    _runningRequest = null;
   }
 }

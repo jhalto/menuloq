@@ -28,7 +28,7 @@ class _SplashViewState extends State<SplashView> {
       await di.authRepository.refreshToken();
       return true;
     } catch (_) {
-      await di.authRepository.logout();
+      await di.logout();
       return false;
     }
   }

@@ -31,3 +31,7 @@ class MyAccountSaveRequested extends MyAccountEvent {
 class MyAccountMessageDismissed extends MyAccountEvent {
   const MyAccountMessageDismissed();
 }
+
+class MyAccountFieldsChanged extends MyAccountEvent {
+  const MyAccountFieldsChanged();
+}

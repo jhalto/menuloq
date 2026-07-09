@@ -17,6 +17,7 @@ class MyAccountBloc extends Bloc<MyAccountEvent, MyAccountState> {
     on<MyAccountRefreshRequested>(_onRefreshRequested);
     on<MyAccountSaveRequested>(_onSaveRequested);
     on<MyAccountMessageDismissed>(_onMessageDismissed);
+    on<MyAccountFieldsChanged>(_onFieldsChanged);
   }
 
   final GetMyAccountUseCase _getMyAccountUseCase;
@@ -99,6 +100,19 @@ class MyAccountBloc extends Bloc<MyAccountEvent, MyAccountState> {
       state.copyWith(
         clearErrorMessage: true,
         clearSuccessMessage: true,
+      ),
+    );
+  }
+
+  void _onFieldsChanged(
+    MyAccountFieldsChanged event,
+    Emitter<MyAccountState> emit,
+  ) {
+    if (state.fieldErrors.isEmpty) return;
+    emit(
+      state.copyWith(
+        clearErrorMessage: true,
+        clearFieldErrors: true,
       ),
     );
   }

@@ -9,6 +9,7 @@ import 'package:menuloq/features/business_setting/presentation/bloc/business_set
 import 'package:menuloq/features/business_setting/presentation/views/business_setting_view.dart';
 import 'package:menuloq/features/dashboard/presentation/views/dashboard_view.dart';
 import 'package:menuloq/features/main_navigation/presentation/widgets/mobile_bottom_navbar.dart';
+import 'package:menuloq/features/main_navigation/presentation/widgets/mobile_app_drawer.dart';
 
 import '../../../../config/theme/app_colors.dart';
 import '../cubit/main_navigation_cubit.dart';
@@ -76,8 +77,8 @@ class MainShellView extends StatelessWidget {
     DashboardView(),
     _DemoPage(title: 'Orders'),
     _DemoPage(title: 'Menu'),
-    BusinessSettingsView(),
-    MyAccountView(),
+    BusinessSettingsView(showHeader: false),
+    MyAccountView(showHeader: false),
   ];
 
   @override
@@ -120,6 +121,15 @@ class MainShellView extends StatelessWidget {
               backgroundColor: isDark
                   ? AppColors.darkBackground
                   : AppColors.background,
+              appBar: AppBar(
+                title: Text(_items[selectedIndex].label),
+              ),
+              drawer: MobileAppDrawer(
+                items: _items,
+                selectedIndex: selectedIndex,
+                onDestinationSelected:
+                    context.read<MainNavigationCubit>().changeTab,
+              ),
               body: SafeArea(
                 bottom: false,
                 child: IndexedStack(index: selectedIndex, children: _pages),

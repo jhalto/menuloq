@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:equatable/equatable.dart';
 import 'package:menuloq/features/business_setting/domain/intities/business_settings_entity.dart';
 
@@ -17,6 +19,8 @@ class UpdateBusinessSettingsParams extends Equatable {
     required this.deliveryCharge,
     required this.instructions,
     required this.isAvailable,
+    this.logoBytes,
+    this.logoFileName,
   });
 
   final String businessName;
@@ -33,6 +37,8 @@ class UpdateBusinessSettingsParams extends Equatable {
   final double deliveryCharge;
   final String instructions;
   final bool isAvailable;
+  final Uint8List? logoBytes;
+  final String? logoFileName;
 
   factory UpdateBusinessSettingsParams.fromSettings(
     BusinessSettingsEntity settings, {
@@ -50,6 +56,8 @@ class UpdateBusinessSettingsParams extends Equatable {
     double? deliveryCharge,
     String? instructions,
     bool? isAvailable,
+    Uint8List? logoBytes,
+    String? logoFileName,
   }) {
     final business = settings.business;
     final delivery = settings.deliverySetting;
@@ -74,6 +82,8 @@ class UpdateBusinessSettingsParams extends Equatable {
       deliveryCharge: deliveryCharge ?? delivery.deliveryCharge,
       instructions: instructions ?? delivery.instructions ?? '',
       isAvailable: isAvailable ?? business.isAvailable,
+      logoBytes: logoBytes,
+      logoFileName: logoFileName,
     );
   }
 
@@ -112,6 +122,8 @@ class UpdateBusinessSettingsParams extends Equatable {
         deliveryCharge,
         instructions,
         isAvailable,
+        logoBytes,
+        logoFileName,
       ];
 }
 

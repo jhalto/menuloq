@@ -24,3 +24,7 @@ class BusinessSettingsSaveRequested extends BusinessSettingsEvent {
 
   final UpdateBusinessSettingsParams params;
 }
+
+class BusinessSettingsFieldsChanged extends BusinessSettingsEvent {
+  const BusinessSettingsFieldsChanged();
+}

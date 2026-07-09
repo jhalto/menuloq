@@ -11,6 +11,7 @@ class MyAccountRepositoryImpl implements MyAccountRepository {
 
   MyAccountEntity? _cachedAccount;
   Future<MyAccountEntity>? _runningRequest;
+  int _cacheGeneration = 0;
 
   @override
   Future<MyAccountEntity> getMyAccount({bool forceRefresh = false}) {
@@ -22,8 +23,11 @@ class MyAccountRepositoryImpl implements MyAccountRepository {
       return _runningRequest!;
     }
 
+    final generation = _cacheGeneration;
     final request = _remoteDataSource.getMyAccount().then((account) {
-      _cachedAccount = account;
+      if (generation == _cacheGeneration) {
+        _cachedAccount = account;
+      }
       return account;
     }).whenComplete(() {
       _runningRequest = null;
@@ -49,5 +53,12 @@ class MyAccountRepositoryImpl implements MyAccountRepository {
   @override
   Future<String> changePassword(ChangePasswordParams params) {
     return _remoteDataSource.changePassword(params);
+  }
+
+  @override
+  void clearCache() {
+    _cacheGeneration++;
+    _cachedAccount = null;
+    _runningRequest = null;
   }
 }
