@@ -11,4 +11,5 @@ class ApiEndpoints {
   static const String changePassword = '/api/change-password';
   static const String myAccount = '/api/my-account';
   static const String getBusinessSettings = '/api/business-settings';
+  static const String categories = '/api/categories';
 }

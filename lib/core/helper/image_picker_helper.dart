@@ -31,6 +31,7 @@ class ImagePickerHelper {
     double maxWidth = 1024,
     double maxHeight = 1024,
     int imageQuality = 90,
+    Set<String> allowedExtensions = const {'jpg', 'jpeg', 'png'},
   }) async {
     final file = await _picker.pickImage(
       source: source == AppImageSource.camera
@@ -47,9 +48,9 @@ class ImagePickerHelper {
     final fileName = file.name;
     final extension = _extensionOf(fileName);
 
-    if (extension != 'jpg' && extension != 'jpeg' && extension != 'png') {
-      throw const ImagePickerException(
-        'Please select a PNG or JPG image.',
+    if (!allowedExtensions.contains(extension)) {
+      throw ImagePickerException(
+        'Please select a ${_formatExtensions(allowedExtensions)} image.',
       );
     }
 
@@ -65,19 +66,37 @@ class ImagePickerHelper {
 
   static Future<PickedAppImage?> pickFromGallery({
     int maxBytes = 512 * 1024,
+    Set<String> allowedExtensions = const {'jpg', 'jpeg', 'png'},
   }) {
-    return pick(source: AppImageSource.gallery, maxBytes: maxBytes);
+    return pick(
+      source: AppImageSource.gallery,
+      maxBytes: maxBytes,
+      allowedExtensions: allowedExtensions,
+    );
   }
 
   static Future<PickedAppImage?> pickFromCamera({
     int maxBytes = 512 * 1024,
+    Set<String> allowedExtensions = const {'jpg', 'jpeg', 'png'},
   }) {
-    return pick(source: AppImageSource.camera, maxBytes: maxBytes);
+    return pick(
+      source: AppImageSource.camera,
+      maxBytes: maxBytes,
+      allowedExtensions: allowedExtensions,
+    );
   }
 
   static String _extensionOf(String fileName) {
     final separator = fileName.lastIndexOf('.');
     if (separator == -1) return '';
     return fileName.substring(separator + 1).toLowerCase();
+  }
+
+  static String _formatExtensions(Set<String> extensions) {
+    final names = extensions.map((item) => item.toUpperCase()).toList();
+    if (names.length <= 1) return names.join();
+    if (names.length == 2) return '${names.first} or ${names.last}';
+
+    return '${names.sublist(0, names.length - 1).join(', ')}, or ${names.last}';
   }
 }

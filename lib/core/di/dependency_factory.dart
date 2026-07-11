@@ -28,6 +28,12 @@ import 'package:menuloq/features/business_setting/domain/repository/business_set
 import 'package:menuloq/features/business_setting/domain/usecases/get_bussiness_settings_use_case.dart';
 import 'package:menuloq/features/business_setting/domain/usecases/update_business_settings_use_case.dart';
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_bloc.dart';
+import 'package:menuloq/features/categories/data/data_sources/remote/categories_remote_data_source.dart';
+import 'package:menuloq/features/categories/data/repositories/categories_repository_impl.dart';
+import 'package:menuloq/features/categories/domain/repositories/categories_repository.dart';
+import 'package:menuloq/features/categories/domain/usecases/create_category_use_case.dart';
+import 'package:menuloq/features/categories/domain/usecases/get_categories_use_case.dart';
+import 'package:menuloq/features/categories/presentation/cubit/categories_cubit.dart';
 
 /// Manual Dependency Injection
 ///
@@ -59,6 +65,9 @@ class DependencyFactory {
   late final MyAccountRemoteDataSource myAccountRemoteDataSource =
       MyAccountRemoteDataSourceImpl(dio: DioClient.dio);
 
+  late final CategoriesRemoteDataSource categoriesRemoteDataSource =
+      CategoriesRemoteDataSourceImpl(DioClient.dio);
+
   // ──────────────────────────────────────────
   // Repositories
   // ──────────────────────────────────────────
@@ -70,6 +79,9 @@ class DependencyFactory {
 
   late final MyAccountRepository myAccountRepository =
       MyAccountRepositoryImpl(myAccountRemoteDataSource);
+
+  late final CategoriesRepository categoriesRepository =
+      CategoriesRepositoryImpl(categoriesRemoteDataSource);
 
   // ──────────────────────────────────────────
   // Use Cases
@@ -93,6 +105,11 @@ class DependencyFactory {
       UpdateMyAccountUseCase(myAccountRepository);
   late final ChangePasswordUseCase changePasswordUseCase =
       ChangePasswordUseCase(myAccountRepository);
+
+  late final GetCategoriesUseCase getCategoriesUseCase =
+      GetCategoriesUseCase(categoriesRepository);
+  late final CreateCategoryUseCase createCategoryUseCase =
+      CreateCategoryUseCase(categoriesRepository);
 
   // ──────────────────────────────────────────
   // Blocs
@@ -145,6 +162,13 @@ class DependencyFactory {
 
   ChangePasswordBloc createChangePasswordBloc() {
     return ChangePasswordBloc(changePasswordUseCase: changePasswordUseCase);
+  }
+
+  CategoriesCubit createCategoriesCubit() {
+    return CategoriesCubit(
+      getCategoriesUseCase: getCategoriesUseCase,
+      createCategoryUseCase: createCategoryUseCase,
+    );
   }
 
   // business settings

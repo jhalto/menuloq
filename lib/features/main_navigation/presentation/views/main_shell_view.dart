@@ -7,6 +7,8 @@ import 'package:menuloq/features/account/presentation/views/my_account_view.dart
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_bloc.dart';
 import 'package:menuloq/features/business_setting/presentation/bloc/business_settings_event.dart';
 import 'package:menuloq/features/business_setting/presentation/views/business_setting_view.dart';
+import 'package:menuloq/features/categories/presentation/cubit/categories_cubit.dart';
+import 'package:menuloq/features/categories/presentation/views/categories_view.dart';
 import 'package:menuloq/features/dashboard/presentation/views/dashboard_view.dart';
 import 'package:menuloq/features/main_navigation/presentation/widgets/mobile_bottom_navbar.dart';
 import 'package:menuloq/features/main_navigation/presentation/widgets/mobile_app_drawer.dart';
@@ -34,6 +36,9 @@ class MainShellPage extends StatelessWidget {
           create: (_) =>
               di.createMyAccountBloc()..add(const MyAccountStarted()),
         ),
+        BlocProvider<CategoriesCubit>(
+          create: (_) => di.createCategoriesCubit()..load(),
+        ),
       ],
       child: const MainShellView(),
     );
@@ -57,9 +62,9 @@ class MainShellView extends StatelessWidget {
       activeIcon: Icons.receipt_long_rounded,
     ),
     NavBarItemData(
-      label: 'Menu',
-      icon: Icons.restaurant_menu_outlined,
-      activeIcon: Icons.restaurant_menu_rounded,
+      label: 'Categories',
+      icon: Icons.category_outlined,
+      activeIcon: Icons.category_rounded,
     ),
     NavBarItemData(
       label: 'Settings',
@@ -76,7 +81,7 @@ class MainShellView extends StatelessWidget {
   static const List<Widget> _pages = [
     DashboardView(),
     _DemoPage(title: 'Orders'),
-    _DemoPage(title: 'Menu'),
+    CategoriesView(showHeader: false),
     BusinessSettingsView(showHeader: false),
     MyAccountView(showHeader: false),
   ];
